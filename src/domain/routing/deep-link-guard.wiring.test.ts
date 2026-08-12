@@ -31,7 +31,7 @@ function readPageSource(relativePath: string): string {
 }
 
 describe('deep link guard — 页面 wiring 回归（第五阶段页面就位后启用）', () => {
-  test.skip('/tutorial/page.tsx 真实调了 guardGuidanceRoute(cleanText) 并 redirect', () => {
+  test('/tutorial/page.tsx 真实调了 guardGuidanceRoute(cleanText) 并 redirect', () => {
     const src = readPageSource('src/app/tutorial/page.tsx')
     assert.ok(
       /const\s+guard\s*=\s*guardGuidanceRoute\(\s*cleanText\s*\)/.test(src),
@@ -43,7 +43,7 @@ describe('deep link guard — 页面 wiring 回归（第五阶段页面就位后
     )
   })
 
-  test.skip('/tutorial/page.tsx 的 guard 调用在 findTutorial 之前（位置不变量）', () => {
+  test('/tutorial/page.tsx 的 guard 调用在 findTutorial 之前（位置不变量）', () => {
     const src = readPageSource('src/app/tutorial/page.tsx')
     const guardIdx = src.search(/guardGuidanceRoute\(\s*cleanText\s*\)/)
     const findIdx = src.search(/findTutorial\(\s*cleanText\s*\)/)
@@ -55,7 +55,7 @@ describe('deep link guard — 页面 wiring 回归（第五阶段页面就位后
     )
   })
 
-  test.skip('/confirm/page.tsx 真实调了 guardGuidanceRoute(cleanText) 并 redirect', () => {
+  test('/confirm/page.tsx 真实调了 guardGuidanceRoute(cleanText) 并 redirect', () => {
     const src = readPageSource('src/app/confirm/page.tsx')
     assert.ok(
       /const\s+guard\s*=\s*guardGuidanceRoute\(\s*cleanText\s*\)/.test(src),
@@ -67,7 +67,7 @@ describe('deep link guard — 页面 wiring 回归（第五阶段页面就位后
     )
   })
 
-  test.skip('/confirm/page.tsx 的 guard 调用在主渲染之前（位置不变量）', () => {
+  test('/confirm/page.tsx 的 guard 调用在主渲染之前（位置不变量）', () => {
     const src = readPageSource('src/app/confirm/page.tsx')
     const guardIdx = src.search(/guardGuidanceRoute\(\s*cleanText\s*\)/)
     const actionsIdx = src.search(/<ConfirmActions\s/)
