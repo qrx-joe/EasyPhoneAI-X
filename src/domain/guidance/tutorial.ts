@@ -9,7 +9,7 @@
  * 4. 首个匹配的教程生效 —— 教程库按特异性排序，更具体的放前面。
  */
 
-import type { RiskLevel } from '../risk/types.ts'
+import { shouldStopGuidance, type RiskLevel } from '../risk/types.ts'
 
 // ─────────────────────────────────────────────────────────────────────
 // 类型
@@ -88,10 +88,13 @@ export function findTutorial(text: string): Tutorial | null {
 /**
  * 给定风险等级，过滤出可以展示的教程。
  * 高/极高风险不进分步指导（防御性过滤，避免 UI 误调）。
+ *
+ * 复用 shouldStopGuidance()，避免重复硬编码 high/critical 判断 ——
+ * 未来阈值变化（如 medium 也要停）时自动跟随。
  */
 export function safeTutorialsFor(level: RiskLevel): readonly Tutorial[] {
-  if (level === 'high' || level === 'critical') return []
-  return TUTORIALS.filter((t) => t.maxLevel !== 'critical' && t.maxLevel !== 'high')
+  if (shouldStopGuidance(level)) return []
+  return TUTORIALS.filter((t) => !shouldStopGuidance(t.maxLevel))
 }
 
 // ─────────────────────────────────────────────────────────────────────
