@@ -1,0 +1,92 @@
+/*
+ * 适老化全局设计令牌与基础样式。
+ *
+ * 设计原则（方案 9.2 + 旧项目已验证令牌）：
+ *   1. 基准字号 22px（html font-size）。Tailwind 用 rem 计量，
+ *      所以 text-base = 22px、text-xl = 27.5px、text-3xl = 41.25px，
+ *      不用每个组件再加适老化补丁。
+ *   2. 单一 light theme，不响应 prefers-color-scheme。
+ *      老人白天用得多，深色模式下浅黑配深底对老花眼对比更差。
+ *   3. 字体族中文优先，避免请求外部字体。
+ *   4. 触控优化：关闭 iOS 双击放大、去 tap highlight。
+ *
+ * 改 html font-size / 颜色变量后，所有页面跑一次肉眼校验 rem 是否还合适；
+ * 删任何变量前先 grep 用到的地方。
+ * 改 --color-* 必须同步更新对比度测试的 COLORS 常量（第二阶段迁移 contrast.test.ts 后）。
+ */
+
+@import "tailwindcss";
+
+/* ─────────────────────────────────────────────────────────────────
+ * 适老化设计令牌。
+ * ───────────────────────────────────────────────────────────────── */
+
+@theme {
+  --color-background: #ffffff;
+  --color-foreground: #1a1a1a;
+
+  /* 主动作色（蓝）— 用于「按住说话」「打字告诉我」「是的，继续」 */
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
+  --color-primary-soft: #dbeafe;
+
+  /* 危险色（红）— 用于「停下来」「家人求助卡」「不要操作」 */
+  --color-danger: #dc2626;
+  --color-danger-hover: #b91c1c;
+  --color-danger-soft: #fee2e2;
+
+  /* 中性灰阶 */
+  --color-muted: #6b7280;
+  --color-soft: #f3f4f6;
+  --color-soft-hover: #e5e7eb;
+  --color-border: #d1d5db;
+
+  /* 中文优先字体族 */
+  --font-sans:
+    "PingFang SC", "Microsoft YaHei", "Source Han Sans CN", "WenQuanYi Micro Hei",
+    system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+html {
+  /* 适老化基准：22px。所有 rem 都按这个缩放 */
+  font-size: 22px;
+  /* 强制 light（不响应系统深色） */
+  color-scheme: light only;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  /* 手机优化 */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 让 input/textarea/button 继承字体（避免老人输入区字突然变小） */
+input,
+textarea,
+button {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* 老人 focus 必须可见（键盘/外设场景） */
+:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* 动效遵循 prefers-reduced-motion（方案 9.2，前庭障碍在老年群体中比例更高） */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

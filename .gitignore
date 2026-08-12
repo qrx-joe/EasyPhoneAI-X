@@ -36,3 +36,9 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
+
+# tsc incremental 缓存
+tsconfig.tsbuildinfo
+
+# 本地工具目录
+.zcode/
