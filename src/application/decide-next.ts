@@ -21,7 +21,6 @@
  */
 
 import { classifyRiskByRules } from '../domain/risk/classify-risk.ts'
-import { shouldStopGuidance } from '../domain/risk/types.ts'
 import { findTutorial, safeTutorialsFor } from '../domain/guidance/tutorial.ts'
 import { createQuestion } from '../domain/question/question.ts'
 import { buildHandoffCard } from '../domain/handoff/handoff-templates.ts'
@@ -32,7 +31,9 @@ import {
   type RiskAssessment,
 } from '../contracts/risk-policy.ts'
 import type {
+  GuidanceDecision,
   GuideDecision,
+  StopDecision,
   ClarifyDecision,
   UnsupportedDecision,
 } from '../contracts/guidance-decision.ts'
@@ -66,52 +67,42 @@ export interface DecideNextDeps {
 
 /**
  * decide-next 用例输出。
- * decision 是 4 分支联合类型，调用方必须穷尽处理。
+ *
+ * decision 是 GuidanceDecision 联合类型（guide/stop/clarify/unsupported），
+ * 调用方必须穷尽处理所有分支（方案 §6.1）。
+ * stop 分支的求助卡通过 decision.handoff 获取（无需旁路字段）。
  */
 export interface DecideNextOutput {
   readonly traceId: string
-  readonly decision:
-    | GuideDecision
-    | ClarifyDecision
-    | UnsupportedDecision
+  readonly decision: GuidanceDecision
   readonly policyVersion: string
   readonly modelVersion: string | null
-  /** stop 决策附带求助卡。为简化联合类型，stop 单独放这里（见下方说明）。 */
-  readonly stopHandoff: import('../domain/handoff/handoff-request.ts').HandoffCard | null
 }
 
 /**
  * 执行决策链。
- *
- * 注意：本函数返回 stop 决策时，decision 字段为 UnsupportedDecision 占位（reasonCode=INTERNAL_ERROR），
- * 真正的 stop 信息通过 stopHandoff 字段传递。这是为了绕过 TypeScript 联合类型的序列化复杂性——
- * GuideDecision 含 TutorialStep（递归结构），StopDecision 含 HandoffCard（含 QuestionRecord），
- * 直接放进联合类型会让 Route Handler 的序列化分支很重。
- *
- * 第五阶段实现页面时，调用方根据 stopHandoff !== null 判定 stop 分支。
  */
 export async function decideNext(
   input: DecideNextInput,
   deps: DecideNextDeps,
 ): Promise<DecideNextOutput> {
   const startTime = Date.now()
-  const policyVersion = RISK_POLICY_VERSION
 
   // ── 1. 输入校验 ──
   const trimmedText = input.text.trim()
   if (!trimmedText) {
-    return buildResult(input, deps, startTime, {
-      kind: 'unsupported' as const,
+    return finish(input, deps, startTime, {
+      kind: 'unsupported',
       reasonCode: ERROR_CODES.INVALID_INPUT,
-    }, null, null, 'rule_only')
+    }, null, 'rule_only')
   }
 
   // 有截图但无 consentId → 拒绝（方案 §8.1）
   if (input.screenshot !== null && !input.consentId) {
-    return buildResult(input, deps, startTime, {
-      kind: 'unsupported' as const,
+    return finish(input, deps, startTime, {
+      kind: 'unsupported',
       reasonCode: ERROR_CODES.CONSENT_REQUIRED,
-    }, null, null, 'rule_only')
+    }, null, 'rule_only')
   }
 
   // ── 2. 确定性风险规则（永远先跑，不可跳过）──
@@ -134,40 +125,50 @@ export async function decideNext(
   // ── 5. 高风险 → 立即终止，生成求助卡 ──
   // 安全不变量：规则命中 high/critical 后，普通指导立即终止。
   // 即使 vision 不可用，也必须显示风险停止页和求助卡（方案 §11.2）。
-  if (shouldStopGuidance(merged.level)) {
+  //
+  // 这里用字面量判断而非 shouldStopGuidance()，是为了让 TypeScript 把
+  // merged.level 收窄为 'high' | 'critical'（StopDecision.risk 的类型要求）。
+  // shouldStopGuidance 的逻辑与此等价，由测试和 safeTutorialsFor 间接覆盖。
+  if (merged.level === 'high' || merged.level === 'critical') {
     const question = createQuestion(trimmedText, 'text', ruleClassification)
     const handoff = buildHandoffCard(question)
-    return buildResult(input, deps, startTime, null, merged.level, handoff, 'rule_only')
+    const stopDecision: StopDecision = {
+      kind: 'stop',
+      risk: merged.level,
+      handoff,
+    }
+    return finish(input, deps, startTime, stopDecision, merged.level, 'rule_only')
   }
 
   // ── 6. 视觉失败但规则未命中高风险 → UNKNOWN（不 fail-open）──
   // 方案 §11.2：图片无法判断、模型输出冲突或安全状态不确定 → UNKNOWN。
   // 这是与旧项目 fail-open 的核心区别：技术故障不降级到低风险。
   if (observeResult.kind === 'failed') {
-    return buildResult(input, deps, startTime, {
-      kind: 'clarify' as const,
-      risk: 'unknown' as const,
+    const clarify: ClarifyDecision = {
+      kind: 'clarify',
+      risk: 'unknown',
       questions: buildClarifyQuestions(observeResult.reason),
-    }, 'unknown', null, `vision_${observeResult.reason}`)
+    }
+    return finish(input, deps, startTime, clarify, 'unknown', `vision_${observeResult.reason}`)
   }
 
   // ── 7. 任务包状态匹配（P0 用 tutorial 匹配替代完整状态机）──
   const tutorial = findTutorial(trimmedText)
   if (tutorial === null) {
     // 没有匹配的白名单教程 → unsupported
-    return buildResult(input, deps, startTime, {
-      kind: 'unsupported' as const,
+    return finish(input, deps, startTime, {
+      kind: 'unsupported',
       reasonCode: ERROR_CODES.TASK_STATE_NOT_FOUND,
-    }, merged.level, null, 'no_tutorial')
+    }, merged.level, 'no_tutorial')
   }
 
   // 防御性过滤：即使前面过了，这里再卡一次（safeTutorialsFor 用 shouldStopGuidance）
   if (safeTutorialsFor(merged.level).length === 0) {
-    return buildResult(input, deps, startTime, {
-      kind: 'clarify' as const,
-      risk: 'unknown' as const,
+    return finish(input, deps, startTime, {
+      kind: 'clarify',
+      risk: 'unknown',
       questions: ['这种情况我不太确定,能再描述一下吗?'],
-    }, 'unknown', null, 'safe_filter')
+    }, 'unknown', 'safe_filter')
   }
 
   // ── 8. 低/中风险 + 有匹配教程 → guide ──
@@ -180,7 +181,7 @@ export async function decideNext(
     successSignal: tutorial.title,
   }
 
-  return buildResult(input, deps, startTime, guideDecision, merged.level, null, 'ok')
+  return finish(input, deps, startTime, guideDecision, merged.level, 'ok')
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -221,15 +222,15 @@ function buildClarifyQuestions(reason: VisionFailure): string[] {
 /**
  * 统一构造结果 + 记录审计事件。
  *
- * stopDecision 为 null 时表示是 stop 分支（求助卡在 handoff 参数）。
+ * decision 是完整的 GuidanceDecision（含 stop 分支）。
+ * riskLevel 用于审计（stop 时是 high/critical，clarify 时是 unknown，等）。
  */
-function buildResult(
+function finish(
   input: DecideNextInput,
   deps: DecideNextDeps,
   startTime: number,
-  decision: GuideDecision | ClarifyDecision | UnsupportedDecision | null,
+  decision: GuidanceDecision,
   riskLevel: string | null,
-  handoff: import('../domain/handoff/handoff-request.ts').HandoffCard | null,
   fallback: string,
 ): DecideNextOutput {
   const durationMs = Date.now() - startTime
@@ -246,8 +247,8 @@ function buildResult(
         inputHash: hashText(input.text),
         inputLength: input.text.length,
         hasScreenshot: input.screenshot !== null,
-        decisionKind: handoff !== null ? 'stop' : (decision?.kind ?? 'unknown'),
-        reasonCode: decision !== null && 'reasonCode' in decision ? decision.reasonCode : null,
+        decisionKind: decision.kind,
+        reasonCode: decision.kind === 'unsupported' ? decision.reasonCode : null,
         riskLevel: riskLevel ?? 'unknown',
         durationMs,
         fallback,
@@ -257,30 +258,11 @@ function buildResult(
     }
   }
 
-  // stop 分支：decision 用占位（调用方靠 stopHandoff 判定）
-  if (handoff !== null) {
-    return {
-      traceId: input.traceId,
-      decision: {
-        kind: 'unsupported',
-        reasonCode: 'STOP_VIA_HANDOFF',
-      },
-      policyVersion: RISK_POLICY_VERSION,
-      modelVersion: deps.modelVersion,
-      stopHandoff: handoff,
-    }
-  }
-
   return {
     traceId: input.traceId,
-    decision: decision ?? {
-      kind: 'clarify',
-      risk: 'unknown',
-      questions: ['出了点问题,请重试'],
-    },
+    decision,
     policyVersion: RISK_POLICY_VERSION,
     modelVersion: deps.modelVersion,
-    stopHandoff: null,
   }
 }
 

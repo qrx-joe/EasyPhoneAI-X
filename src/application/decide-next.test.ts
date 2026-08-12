@@ -65,7 +65,6 @@ describe('decideNext — guide 分支（低风险 + 有教程）', () => {
       { vision: null, telemetry, modelVersion: null },
     )
     assert.equal(result.decision.kind, 'guide')
-    assert.equal(result.stopHandoff, null)
     if (result.decision.kind === 'guide') {
       assert.equal(result.decision.risk, 'low')
       assert.ok(result.decision.step.title.length > 0)
@@ -100,8 +99,11 @@ describe('decideNext — stop 分支（高风险强中止）', () => {
       makeInput({ text: '对方让我开屏幕共享' }),
       { vision: null, telemetry: null, modelVersion: null },
     )
-    assert.ok(result.stopHandoff !== null, '高风险必须附求助卡')
-    assert.equal(result.stopHandoff!.riskLevel, 'critical')
+    assert.equal(result.decision.kind, 'stop')
+    if (result.decision.kind === 'stop') {
+      assert.equal(result.decision.risk, 'critical')
+      assert.equal(result.decision.handoff.riskLevel, 'critical')
+    }
   })
 
   test('high（陌生链接）→ stop', async () => {
@@ -109,8 +111,11 @@ describe('decideNext — stop 分支（高风险强中止）', () => {
       makeInput({ text: '点这个陌生链接领奖' }),
       { vision: null, telemetry: null, modelVersion: null },
     )
-    assert.ok(result.stopHandoff !== null)
-    assert.equal(result.stopHandoff!.riskLevel, 'high')
+    assert.equal(result.decision.kind, 'stop')
+    if (result.decision.kind === 'stop') {
+      assert.equal(result.decision.risk, 'high')
+      assert.equal(result.decision.handoff.riskLevel, 'high')
+    }
   })
 
   test('高风险即使 vision 不可用也必须 stop（方案 §11.2）', async () => {
@@ -119,7 +124,7 @@ describe('decideNext — stop 分支（高风险强中止）', () => {
       makeInput({ text: '对方让我转账' }),
       { vision: null, telemetry: null, modelVersion: null },
     )
-    assert.ok(result.stopHandoff !== null)
+    assert.equal(result.decision.kind, 'stop')
   })
 
   test('stop 求助卡序列化输出不含教给出去话术（数据最小化）', async () => {
@@ -127,13 +132,14 @@ describe('decideNext — stop 分支（高风险强中止）', () => {
       makeInput({ text: '对方让我转账' }),
       { vision: null, telemetry: null, modelVersion: null },
     )
-    assert.ok(result.stopHandoff !== null)
+    assert.equal(result.decision.kind, 'stop')
+    if (result.decision.kind !== 'stop') return
     // 检查面向家人分享的序列化文本（serializeHandoffCard 的输出）
     // 不含"教给出去"话术（forbidden-patterns 已在 handoff 层测试覆盖，
     // 这里验证 decide-next 产出的 card 通过序列化后仍然安全）
     const { serializeHandoffCard } = await import('../domain/handoff/card-serialization.ts')
     const { FORBIDDEN_GIVE_AWAY_PATTERNS } = await import('../domain/handoff/forbidden-patterns.ts')
-    const text = serializeHandoffCard(result.stopHandoff)
+    const text = serializeHandoffCard(result.decision.handoff)
     for (const bad of FORBIDDEN_GIVE_AWAY_PATTERNS) {
       assert.ok(!text.includes(bad), `求助卡序列化输出含教给出去话术「${bad}」`)
     }
@@ -162,8 +168,6 @@ describe('decideNext — clarify 分支（视觉失败不 fail-open）', () => {
       assert.equal(result.decision.risk, 'unknown')
       assert.ok(result.decision.questions.length > 0)
     }
-    // 关键：不返回具体按钮指导
-    assert.ok(result.stopHandoff === null, 'clarify 不应附求助卡')
   })
 
   test('视觉低置信度 → clarify', async () => {
@@ -203,7 +207,7 @@ describe('decideNext — clarify 分支（视觉失败不 fail-open）', () => {
       }),
       { vision: provider, telemetry: null, modelVersion: 'qwen-test' },
     )
-    assert.ok(result.stopHandoff !== null, '高风险规则命中优先于视觉故障')
+    assert.equal(result.decision.kind, 'stop', '高风险规则命中优先于视觉故障')
     assert.notEqual(result.decision.kind, 'clarify')
   })
 })
