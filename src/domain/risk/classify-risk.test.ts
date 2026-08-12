@@ -65,6 +65,10 @@ describe('classifyRiskByRules — 16 个验收 case', () => {
 // ─────────────────────────────────────────────────────────────────────
 
 describe('多关键词命中取 MAX（安全保险丝）', () => {
+  test('退款 medium + 验证码 critical → critical', () => {
+    assert.equal(classifyRiskByRules('申请退款时对方让我给验证码').level, 'critical')
+  })
+
   test('「中奖+垫付」必须升到 critical，而不是停在中奖的 high', () => {
     const r = classifyRiskByRules('您中奖了请先垫付手续费')
     assert.equal(r.level, 'critical')

@@ -13,11 +13,12 @@ import { describe, test } from 'node:test'
 import { TUTORIALS, findTutorial, safeTutorialsFor } from './tutorial.ts'
 
 describe('TUTORIALS 库', () => {
-  test('至少有 2 个教程（wechat-no-sound + font-too-small）', () => {
-    assert.ok(TUTORIALS.length >= 2)
+  test('至少有 3 个教程（含中风险退款）', () => {
+    assert.ok(TUTORIALS.length >= 3)
     const ids = TUTORIALS.map((t) => t.id)
     assert.ok(ids.includes('wechat-no-sound'))
     assert.ok(ids.includes('font-too-small'))
+    assert.ok(ids.includes('ecommerce-refund'))
   })
 
   test('每个教程至少有 1 个匹配关键词 + 1 个步骤', () => {
@@ -48,7 +49,7 @@ describe('TUTORIALS 库', () => {
   })
 
   test('app 字段（如有）必须是已知 App', () => {
-    const KNOWN_APPS = ['wechat', 'sms', 'whatsapp', 'system']
+    const KNOWN_APPS = ['wechat', 'sms', 'whatsapp', 'system', 'ecommerce']
     for (const tut of TUTORIALS) {
       if (tut.app !== undefined) {
         assert.ok(
@@ -88,6 +89,12 @@ describe('findTutorial', () => {
       const tut = findTutorial(input)
       assert.ok(tut, `「${input}」 应该匹配到教程`)
       assert.equal(tut!.id, 'font-too-small')
+    }
+  })
+
+  test('电商退款说法匹配到人工审核退款教程', () => {
+    for (const input of ['淘宝退款', '我要申请退款', '京东退款']) {
+      assert.equal(findTutorial(input)?.id, 'ecommerce-refund')
     }
   })
 

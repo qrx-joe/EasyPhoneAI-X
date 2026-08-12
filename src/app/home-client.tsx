@@ -9,13 +9,11 @@
  *   - 实时 transcript 反馈
  *   - 隐私提示用 role="status"
  *
- * 路由：提交后调 routeToInput（纯关键词分流），与语音入口共用同一决策路径。
- * 第三阶段定义的 /api/v2/decision 留给截图场景（第五阶段截图页接入）。
+ * 路由：文字、语音和示例统一进入 /assist，由正式决策 API 重新计算风险。
  */
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 
-import { routeToInput } from '@/domain/routing/user-routing'
 import { VoiceInputButton } from '@/components/voice-input-button'
 
 const EXAMPLES = [
@@ -31,11 +29,11 @@ export function HomeClient() {
 
   const submit = useCallback(() => {
     if (!text.trim()) return
-    routeToInput(router, text)
+    router.push(`/assist?text=${encodeURIComponent(text.trim())}`)
   }, [router, text])
 
   const onVoiceFinal = useCallback((transcript: string) => {
-    routeToInput(router, transcript)
+    router.push(`/assist?text=${encodeURIComponent(transcript)}`)
   }, [router])
 
   return (
@@ -81,7 +79,7 @@ export function HomeClient() {
             <button
               key={ex}
               type="button"
-              onClick={() => routeToInput(router, ex)}
+              onClick={() => router.push(`/assist?text=${encodeURIComponent(ex)}`)}
               className="w-full min-h-[56px] px-4 py-3 rounded-xl bg-(--color-soft) hover:bg-(--color-soft-hover) active:scale-[0.99] transition text-(--color-foreground) text-lg text-left border border-(--color-border)"
             >
               {ex}

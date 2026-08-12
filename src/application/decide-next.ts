@@ -21,6 +21,7 @@
  */
 
 import { classifyRiskByRules } from '../domain/risk/classify-risk.ts'
+import { assessObservationRisk } from '../domain/risk/assess-observation-risk.ts'
 import { findTutorial, safeTutorialsFor } from '../domain/guidance/tutorial.ts'
 import { createQuestion } from '../domain/question/question.ts'
 import { buildHandoffCard } from '../domain/handoff/handoff-templates.ts'
@@ -114,8 +115,10 @@ export async function decideNext(
 
   // ── 3. 截图观察（可选）──
   let observeResult: ObserveScreenResult = { kind: 'skipped' }
-  if (input.screenshot !== null && deps.vision !== null) {
-    observeResult = await observeScreen(input.screenshot, deps.vision)
+  if (input.screenshot !== null) {
+    observeResult = deps.vision === null
+      ? { kind: 'failed', reason: 'unknown' }
+      : await observeScreen(input.screenshot, deps.vision)
   }
 
   // ── 4. 风险取 MAX ──
@@ -130,7 +133,16 @@ export async function decideNext(
   // merged.level 收窄为 'high' | 'critical'（StopDecision.risk 的类型要求）。
   // shouldStopGuidance 的逻辑与此等价，由测试和 safeTutorialsFor 间接覆盖。
   if (merged.level === 'high' || merged.level === 'critical') {
-    const question = createQuestion(trimmedText, 'text', ruleClassification)
+    const finalClassification = ruleClassification.level === merged.level
+      ? ruleClassification
+      : {
+          level: merged.level,
+          matchedKeywords: [],
+          reason: merged.level === 'critical'
+            ? '截图中出现了验证码、转账或远程操作等极高风险信息，请立即停止。'
+            : '截图中出现了需要家人或官方渠道核实的高风险信息。',
+        }
+    const question = createQuestion(trimmedText, 'text', finalClassification)
     const handoff = buildHandoffCard(question)
     const stopDecision: StopDecision = {
       kind: 'stop',
@@ -194,10 +206,8 @@ export async function decideNext(
  */
 function extractVisionRisk(observe: ObserveScreenResult): RiskAssessment | null {
   if (observe.kind !== 'ok') return null
-  // 视觉只提供观察事实，不直接定风险等级。
-  // P0 阶段视觉的风险升级能力通过 elements/screenState 在第五阶段任务包里细化。
-  // 这里返回一个 low 评估，让 mergeRiskByMax 以规则结果为准（视觉不能降级）。
-  return { level: 'low', source: 'vision' }
+  const classification = assessObservationRisk(observe.observation)
+  return { level: classification.level, source: 'vision' }
 }
 
 /**

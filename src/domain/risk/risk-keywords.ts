@@ -29,6 +29,7 @@ export type ScenarioTag =
   | 'fake_identity'       // 5. 假冒身份（亲属 / 公检法 / 机构）
   | 'lottery_or_benefit'  // 6. 中奖 / 补贴 / 高回报投资
   | 'account_or_privacy'  // 7. 账号 / 隐私 / 生物信息
+  | 'ecommerce_refund'    // 电商退款 / 售后入口核验
   | 'colloquial'          // 老人口语化变体（不是规范词，是真实会说的话）
   | 'phrase_snippet'      // 典型骗术原话片段（长关键词，精确打击）
 
@@ -376,6 +377,15 @@ const LOTTERY_OR_BENEFIT: RiskKeyword[] = [
 // 7. 账号 / 隐私 / 生物信息 (MEDIUM / 生物信息升 HIGH)
 // ─────────────────────────────────────────────────────────────────────
 const ACCOUNT_OR_PRIVACY: RiskKeyword[] = [
+  // 电商售后需要二次确认；出现转账、验证码等词时由 MAX 升到更高等级。
+  { keyword: '申请退款',     level: 'medium', scenario: 'ecommerce_refund',
+    reason: '退款要从购物平台的订单详情进入，不要按陌生客服要求去其他渠道操作' },
+  { keyword: '淘宝退款',     level: 'medium', scenario: 'ecommerce_refund',
+    reason: '淘宝退款要从 App 内订单详情进入，不要点聊天或短信里的退款链接' },
+  { keyword: '京东退款',     level: 'medium', scenario: 'ecommerce_refund',
+    reason: '京东退款要从 App 内订单详情进入，不要按陌生客服要求转账或给验证码' },
+  { keyword: '拼多多退款',   level: 'medium', scenario: 'ecommerce_refund',
+    reason: '拼多多退款要从 App 内订单详情进入，不要离开平台处理退款' },
   // 一般账号信息(medium)
   { keyword: '手机号',       level: 'medium', scenario: 'account_or_privacy',
     reason: '手机号属于个人信息,不要随意提供给陌生人' },

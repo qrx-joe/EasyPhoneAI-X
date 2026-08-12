@@ -20,7 +20,7 @@ import { shouldStopGuidance, type RiskLevel } from '../risk/types.ts'
  * UI 层按这个字段渲染「App 磁贴图标」——老人认 App 靠桌面图标的颜色块。
  * 'system' = 手机系统设置。
  */
-export type TutorialApp = 'wechat' | 'sms' | 'whatsapp' | 'system'
+export type TutorialApp = 'wechat' | 'sms' | 'whatsapp' | 'system' | 'ecommerce'
 
 /**
  * 单个教程步骤。
@@ -98,7 +98,7 @@ export function safeTutorialsFor(level: RiskLevel): readonly Tutorial[] {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// 教程库 —— 首批 2 个。新增按真实漏报驱动，不凭想象。
+// 教程库。新增内容必须经过人工审核和安全回归。
 // ─────────────────────────────────────────────────────────────────────
 
 const TUTORIAL_WEIXIN_NO_SOUND: Tutorial = {
@@ -196,7 +196,45 @@ const TUTORIAL_FONT_TOO_SMALL: Tutorial = {
   ],
 }
 
+const TUTORIAL_ECOMMERCE_REFUND: Tutorial = {
+  id: 'ecommerce-refund',
+  title: '从订单页申请退款',
+  app: 'ecommerce',
+  matchKeywords: [
+    '淘宝退款',
+    '淘宝退货',
+    '京东退款',
+    '拼多多退款',
+    '电商退款',
+    '商品退款',
+    '申请退款',
+    '我要退款',
+  ],
+  maxLevel: 'medium',
+  steps: [
+    {
+      id: 'ecommerce-refund-1',
+      title: '先打开订单详情',
+      instruction: '回到购买商品的平台，打开「我的订单」，找到这件商品并进入订单详情。不要点击聊天里收到的退款链接。',
+      alternative: '只从淘宝、京东或拼多多 App 里的「我的订单」进入，不要从短信或陌生人发来的链接进入。',
+    },
+    {
+      id: 'ecommerce-refund-2',
+      title: '找平台内的退款入口',
+      instruction: '在订单详情里找「申请退款」或「退换售后」。如果页面要求先付款、转账或提供验证码，马上停下来。',
+      alternative: '退款入口应在订单详情里。客服让你下载软件、共享屏幕或去别的平台时，不要继续。',
+    },
+    {
+      id: 'ecommerce-refund-3',
+      title: '核对退款去向',
+      instruction: '提交前确认页面写着原路退回。正规退款不需要你先交手续费，也不需要提供短信验证码。',
+      alternative: '看到「先付款」「保证金」「刷流水」或「安全账户」时，立即退出并找家人核实。',
+    },
+  ],
+}
+
 export const TUTORIALS: readonly Tutorial[] = Object.freeze([
+  TUTORIAL_ECOMMERCE_REFUND,
   TUTORIAL_WEIXIN_NO_SOUND,
   TUTORIAL_FONT_TOO_SMALL,
 ])

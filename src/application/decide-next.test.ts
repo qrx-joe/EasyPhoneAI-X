@@ -94,6 +94,29 @@ describe('decideNext — guide 分支（低风险 + 有教程）', () => {
 // ─────────────────────────────────────────────────────────────────────
 
 describe('decideNext — stop 分支（高风险强中止）', () => {
+  test('规则 low + Vision 看到验证码 → critical stop', async () => {
+    const provider = makeVisionProvider({
+      ok: true,
+      observation: {
+        appId: 'taobao',
+        screenState: '退款确认',
+        elements: [{ kind: 'input', label: '请输入短信验证码' }],
+        confidence: 0.95,
+        uncertainties: [],
+      },
+    })
+    const result = await decideNext(
+      makeInput({
+        text: '淘宝退款',
+        consentId: 'consent-1',
+        screenshot: { bytes: new Uint8Array([1]), mime: 'image/png' },
+      }),
+      { vision: provider, telemetry: null, modelVersion: 'qwen-test' },
+    )
+    assert.equal(result.decision.kind, 'stop')
+    if (result.decision.kind === 'stop') assert.equal(result.decision.risk, 'critical')
+  })
+
   test('critical（屏幕共享）→ stop，附求助卡', async () => {
     const result = await decideNext(
       makeInput({ text: '对方让我开屏幕共享' }),
@@ -151,6 +174,18 @@ describe('decideNext — stop 分支（高风险强中止）', () => {
 // ─────────────────────────────────────────────────────────────────────
 
 describe('decideNext — clarify 分支（视觉失败不 fail-open）', () => {
+  test('有截图但未配置 VisionProvider → clarify（不能忽略截图继续指导）', async () => {
+    const result = await decideNext(
+      makeInput({
+        text: '微信没有声音',
+        consentId: 'consent-1',
+        screenshot: { bytes: new Uint8Array([1]), mime: 'image/png' },
+      }),
+      { vision: null, telemetry: null, modelVersion: null },
+    )
+    assert.equal(result.decision.kind, 'clarify')
+  })
+
   test('视觉超时 + 规则未命中高风险 → clarify（不降级为 guide）', async () => {
     // 关键不变量：方案 §12.3「Qwen 超时后不将未知页面当作低风险继续」
     // 用一个低风险文本 + 有截图 + vision 超时

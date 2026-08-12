@@ -34,18 +34,19 @@
 | 风险关键词分类（~80 条）+ MAX 合并 | 33 个 domain 测试（classify-risk.test） |
 | 路由保险丝（高风险绝不进教程） | 12 个测试（user-routing.test + deep-link-guard.test） |
 | 求助卡构建 + 危险话术过滤 | 21 个测试（handoff.test + card-serialization.test） |
-| 白名单教程匹配 + 防御过滤 | 15 个测试（tutorial.test） |
+| 白名单教程匹配 + 防御过滤（含退款教程） | tutorial.test |
 | 决策契约（GuidanceDecision 四分支） | 17 个测试（risk-policy + error-codes + ui-observation） |
 | 决策链编排（guide/stop/clarify/unsupported） | 20 个测试（decide-next.test，含 mock Vision） |
 | Qwen Vision 解析逻辑 | 17 个测试（adapter-internals，mock，非真实调用） |
 | WCAG 对比度 + 设计令牌契约 | 14 个测试（contrast.test，含代码扫描） |
-| **合计** | **184 个测试，183 pass / 1 skip / 0 fail** |
+| **合计** | **195 个测试，194 pass / 1 skip / 0 fail** |
 
 ### ✅ 本地构建验证
 
 - `pnpm typecheck`（TypeScript strict）通过
-- `pnpm build`（Next.js 生产构建）通过，7 个路由编译
+- `pnpm build`（Next.js 生产构建）通过，8 个路由编译
 - `pnpm dev` 开发服务器可启动
+- `pnpm test:e2e` 三条移动端 Chrome 主路径通过（低风险、中风险退款、高风险停止）
 
 ### ⚠️ 固定回放样例（非真实模型调用）
 
@@ -59,8 +60,8 @@
 - **真实 Qwen 调用**：adapter 已实现但未用真实 API Key 测试过（Key 需从百炼控制台获取）
 - **线上部署**：未部署到任何生产环境
 - **真实用户验证**：未做老年用户可用性测试
-- **截图同意/预览/手动遮挡 UI**：方案 §7.1 要求的截图流程 UI 未实现（Route Handler 支持截图上传，但前端涂抹/同意页未做）
-- **完整任务包状态机**：P0 用 tutorial 匹配替代，完整的 Allowed Action 状态机留待后续
+- **截图同意/预览/手动遮挡 UI**：已实现浏览器本地 canvas 涂抹、撤销、取消和明确同意；客户端门禁有单测，仍缺真实设备操作验收
+- **完整任务包状态机**：已增加人工审核的退款教程与 Vision 风险升级，步骤推进仍使用 tutorial，完整 Allowed Action 状态机留待后续
 - **家属端**：方案 §2.3 明确不做账号/数据库/家属收件箱
 - **自动操作**：方案 §2.3 明确不做（无障碍 Service、远程控制、自动点击）
 
