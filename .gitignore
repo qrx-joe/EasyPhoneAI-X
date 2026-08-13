@@ -48,3 +48,11 @@ tsconfig.tsbuildinfo
 .lo-profile-final/
 docx-render/
 docx-render-final/
+
+# 演示视频中间产物（保留最终 mp4 和 tools/）
+docs/demo-video/raw/
+docs/demo-video/audio/
+docs/demo-video/segments/
+docs/demo-video/tmp/
+docs/demo-video/server.log
+docs/demo-video/cards/*.png
