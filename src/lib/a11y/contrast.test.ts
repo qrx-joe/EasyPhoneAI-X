@@ -66,24 +66,24 @@ describe('WCAG 公式正确性', () => {
 // 与 globals.css @theme 完全对应；改那边必须同步改这里。
 const COLORS = {
   background: '#ffffff',
-  foreground: '#1a1a1a',
-  primary: '#2563eb',
-  primaryHover: '#1d4ed8',
-  primarySoft: '#dbeafe',
-  danger: '#dc2626',
-  dangerHover: '#b91c1c',
-  dangerSoft: '#fee2e2',
-  muted: '#6b7280',
-  soft: '#f3f4f6',
-  softHover: '#e5e7eb',
-  border: '#d1d5db',
+  foreground: '#182230',
+  primary: '#1d5fd1',
+  primaryHover: '#164ba7',
+  primarySoft: '#eaf2ff',
+  danger: '#c62828',
+  dangerHover: '#a91f1f',
+  dangerSoft: '#fff0f0',
+  muted: '#596579',
+  soft: '#f4f6f8',
+  softHover: '#e8edf3',
+  border: '#cbd5e1',
 } as const
 
 describe('设计令牌契约：实际在用的前景 × 背景配对', () => {
   test('foreground × background（全站正文基底）', () => {
     const r = contrastRatio(COLORS.foreground, COLORS.background)
     assert.ok(passesAA(r), `全站正文必须过 AA,实际 ${r}:1`)
-    // 1a1a1a 接近纯黑，应远超阈值（~17:1）
+    // 182230 接近纯黑，应远超阈值。
     assert.ok(r > 15, `foreground 应远超 AA,实际仅 ${r}:1`)
   })
 
@@ -108,53 +108,15 @@ describe('设计令牌契约：实际在用的前景 × 背景配对', () => {
   })
 
   // ─── 已知临界值，如实记录跟踪（不调色、不 fail）──────────
-  // muted #6b7280 × white = 4.83:1，AA 正文勉强过，但余量极小。
+  // muted × white 已过 AA；AAA 仍留作长期目标。
   // 刻意 test.skip 跟踪：不偷偷调深（调色是设置页该解决的）。
   test.skip('muted × white 应 ≥ 7:1（目标 AAA，留待设置页统一调）', () => {
     const r = contrastRatio(COLORS.muted, COLORS.background)
     assert.ok(passesAAA(r), `muted on white 当前 ${r}:1,目标 AAA ≥ 7`)
   })
 
-  // ─── 物理上不可达的配对：用代码扫描锁「不允许这种用法」────
-  // muted #6b7280 × soft #f3f4f6 = 4.39:1，永远 < AA 正文 4.5:1。
-  // 这条契约写"代码里不允许把 muted 文字直接放在 soft 容器里"。
-  test('muted × soft 代码里禁止同一 className 同时使用', async () => {
+  test('muted × soft（柔和容器内的辅助文字）', () => {
     const r = contrastRatio(COLORS.muted, COLORS.soft)
-    // 先记录物理事实
-    assert.ok(r < 4.5, `前置断言:muted×soft 应 < 4.5,实际 ${r}(若已达标请改用 passesAA 契约)`)
-
-    const { readFileSync, readdirSync, statSync } = await import('node:fs')
-    const { join } = await import('node:path')
-
-    const tsxFiles: string[] = []
-    const walk = (dir: string): void => {
-      for (const name of readdirSync(dir)) {
-        const p = join(dir, name)
-        const s = statSync(p)
-        if (s.isDirectory()) walk(p)
-        else if (p.endsWith('.tsx')) tsxFiles.push(p)
-      }
-    }
-    walk('src')
-
-    const violators: string[] = []
-    for (const f of tsxFiles) {
-      const src = readFileSync(f, 'utf8')
-      // 同一 className 字符串里同时出现 bg-soft 和 text-muted → 必然踩 muted×soft 坑
-      const classNameLines = src.split('\n').map((l, i) => ({ l, i: i + 1 }))
-      for (const { l, i } of classNameLines) {
-        if (l.includes('--color-soft') && l.includes('--color-muted')) {
-          violators.push(`${f}:${i}  →  ${l.trim()}`)
-        }
-      }
-    }
-
-    assert.deepEqual(
-      violators,
-      [],
-      `muted × soft = ${r}:1 跌破 AA 正文。以下行的 className 同时含 bg-soft 和 text-muted,\n` +
-        `请把该处 muted 换成 foreground(用字号/字重区分层级,不靠颜色):\n` +
-        violators.join('\n'),
-    )
+    assert.ok(passesAA(r), `muted on soft 必须过 AA,实际 ${r}:1`)
   })
 })
