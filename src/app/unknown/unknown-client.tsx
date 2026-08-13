@@ -36,7 +36,7 @@ export function UnknownClient({ text }: Props) {
         <button
           type="button"
           onClick={() => router.push('/')}
-          className="w-full min-h-[64px] px-6 py-3 rounded-xl bg-(--color-primary) hover:bg-(--color-primary-hover) active:scale-[0.99] transition text-white text-xl font-semibold shadow-sm"
+          className="w-full min-h-[64px] px-6 py-3 rounded-xl bg-(--color-primary) hover:bg-(--color-primary-hover) active:scale-[0.99] transition text-(--color-foreground) text-xl font-semibold shadow-sm"
         >
           重新说一遍问题
         </button>

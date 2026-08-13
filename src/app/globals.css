@@ -23,13 +23,14 @@
 
 @theme {
   --color-background: #ffffff;
-  --color-page: #eef2f6;
+  --color-page: #fdfaf6;
   --color-foreground: #182230;
 
-  /* 主动作色（蓝）— 用于「按住说话」「打字告诉我」「是的，继续」 */
-  --color-primary: #1d5fd1;
-  --color-primary-hover: #164ba7;
-  --color-primary-soft: #eaf2ff;
+  /* 主动作色（明亮暖橙）— 温暖亲切；深色文字对比度 ~4.7:1 过 AA。
+     hover 与 primary 同色（深一档会跌破深字 AA），用 brightness 反馈悬停。 */
+  --color-primary: #dd6b20;
+  --color-primary-hover: #dd6b20;
+  --color-primary-soft: #fff4e6;
 
   /* 危险色（红）— 用于「停下来」「家人求助卡」「不要操作」 */
   --color-danger: #c62828;
@@ -39,11 +40,11 @@
   --color-safe: #18794e;
   --color-safe-soft: #edf8f2;
 
-  /* 中性灰阶 */
-  --color-muted: #596579;
-  --color-soft: #f4f6f8;
-  --color-soft-hover: #e8edf3;
-  --color-border: #cbd5e1;
+  /* 中性灰阶（微暖调，配合暖色主色） */
+  --color-muted: #5c5550;
+  --color-soft: #faf7f2;
+  --color-soft-hover: #f2ede5;
+  --color-border: #d6cec3;
 
   /* 中文优先字体族 */
   --font-sans:
@@ -93,7 +94,7 @@ body > main.max-w-md {
   color: white;
   background: var(--color-primary);
   font-size: 26px;
-  box-shadow: 0 6px 16px rgba(29, 95, 209, 0.22);
+  box-shadow: 0 6px 16px rgba(234, 124, 26, 0.25);
 }
 
 .ui-icon {

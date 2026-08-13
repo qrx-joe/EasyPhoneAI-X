@@ -67,16 +67,16 @@ describe('WCAG 公式正确性', () => {
 const COLORS = {
   background: '#ffffff',
   foreground: '#182230',
-  primary: '#1d5fd1',
-  primaryHover: '#164ba7',
-  primarySoft: '#eaf2ff',
+  primary: '#dd6b20',
+  primaryHover: '#dd6b20',
+  primarySoft: '#fff4e6',
   danger: '#c62828',
   dangerHover: '#a91f1f',
   dangerSoft: '#fff0f0',
-  muted: '#596579',
-  soft: '#f4f6f8',
-  softHover: '#e8edf3',
-  border: '#cbd5e1',
+  muted: '#5c5550',
+  soft: '#faf7f2',
+  softHover: '#f2ede5',
+  border: '#d6cec3',
 } as const
 
 describe('设计令牌契约：实际在用的前景 × 背景配对', () => {
@@ -92,9 +92,9 @@ describe('设计令牌契约：实际在用的前景 × 背景配对', () => {
     assert.ok(passesAA(r), `foreground on soft 必须过 AA,实际 ${r}:1`)
   })
 
-  test('white × primary（蓝色主按钮文字）', () => {
-    const r = contrastRatio('#ffffff', COLORS.primary)
-    assert.ok(passesAA(r), `主按钮白字必须过 AA,实际 ${r}:1`)
+  test('foreground × primary（主按钮深色文字）', () => {
+    const r = contrastRatio(COLORS.foreground, COLORS.primary)
+    assert.ok(passesAA(r), `主按钮文字必须过 AA,实际 ${r}:1`)
   })
 
   test('white × danger（求助卡标题文字）', () => {
@@ -102,9 +102,9 @@ describe('设计令牌契约：实际在用的前景 × 背景配对', () => {
     assert.ok(passesAA(r), `求助卡白字必须过 AA,实际 ${r}:1`)
   })
 
-  test('white × primary-hover（hover 态白字）', () => {
-    const r = contrastRatio('#ffffff', COLORS.primaryHover)
-    assert.ok(passesAA(r), `primary-hover 白字必须过 AA,实际 ${r}:1`)
+  test('foreground × primary-hover（hover 态深色文字）', () => {
+    const r = contrastRatio(COLORS.foreground, COLORS.primaryHover)
+    assert.ok(passesAA(r), `primary-hover 文字必须过 AA,实际 ${r}:1`)
   })
 
   // ─── 已知临界值，如实记录跟踪（不调色、不 fail）──────────

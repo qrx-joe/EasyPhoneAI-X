@@ -31,7 +31,7 @@ export function ConfirmActions({ text }: Props) {
         <button
           type="button"
           onClick={() => router.push(`/tutorial?text=${encodeURIComponent(text)}`)}
-          className="w-full min-h-[64px] px-6 py-3 rounded-xl bg-(--color-primary) hover:bg-(--color-primary-hover) active:scale-[0.99] transition text-white text-xl font-semibold shadow-sm"
+          className="w-full min-h-[64px] px-6 py-3 rounded-xl bg-(--color-primary) hover:bg-(--color-primary-hover) active:scale-[0.99] transition text-(--color-foreground) text-xl font-semibold shadow-sm"
         >
           是的，教我怎么做
         </button>

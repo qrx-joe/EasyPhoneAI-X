@@ -55,7 +55,7 @@ export function VoiceInputButton({ onFinal }: VoiceInputButtonProps) {
             ? 'w-full min-h-[128px] px-6 py-5 rounded-[20px] bg-(--color-danger) text-white text-2xl font-bold flex flex-col items-center justify-center gap-2 shadow-[0_10px_22px_rgba(198,40,40,.24)] animate-pulse'
             : isUnavailable
               ? 'w-full min-h-[128px] px-6 py-5 rounded-[20px] bg-(--color-soft) hover:bg-(--color-soft-hover) active:scale-[0.99] transition text-(--color-foreground) text-2xl font-bold flex flex-col items-center justify-center gap-2 border-2 border-(--color-border)'
-              : 'w-full min-h-[128px] px-6 py-5 rounded-[20px] bg-(--color-primary) hover:bg-(--color-primary-hover) active:scale-[0.99] transition text-white text-2xl font-bold flex flex-col items-center justify-center gap-2 shadow-[0_10px_22px_rgba(29,95,209,.25)]'
+              : 'w-full min-h-[128px] px-6 py-5 rounded-[20px] bg-(--color-primary) hover:bg-(--color-primary-hover) active:scale-[0.99] transition text-(--color-foreground) text-2xl font-bold flex flex-col items-center justify-center gap-2 shadow-[0_10px_22px_rgba(221,107,32,.28)]'
         }
         aria-label={isListening ? '我在听,再点一下停止' : buttonLabel}
         aria-pressed={isListening}

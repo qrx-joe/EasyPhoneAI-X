@@ -57,20 +57,17 @@ export function HomeClient() {
 
   return (
     <main className="flex-1 flex flex-col px-5 py-5 gap-4 max-w-md mx-auto w-full">
-      <header className="flex items-center justify-between mb-1">
-        <div className="flex items-center gap-3">
-          <span className="brand-icon" aria-hidden="true">♥</span>
-          <span>
-            <h1 className="text-xl font-bold leading-tight">爸妈别急</h1>
-            <p className="text-sm text-(--color-muted)">安心下一步</p>
-          </span>
-        </div>
-        <span className="rounded-full border border-(--color-border) px-3 py-2 text-sm font-semibold text-(--color-muted)">安全陪伴</span>
+      <header className="flex items-center gap-3 mb-1">
+        <span className="brand-icon" aria-hidden="true">♥</span>
+        <span>
+          <h1 className="text-2xl font-bold leading-tight">爸妈别急</h1>
+          <p className="text-sm text-(--color-muted)">安心下一步</p>
+        </span>
       </header>
 
       <div className="pt-1">
-        <h2 className="text-2xl font-bold leading-tight">遇到什么问题了？</h2>
-        <p className="mt-1 text-base text-(--color-muted)">点蓝色按钮，直接说给我听</p>
+        <h2 className="text-3xl font-bold leading-tight">遇到什么问题了？</h2>
+        <p className="mt-1 text-base text-(--color-muted)">点下面的大按钮，直接说给我听</p>
       </div>
 
       {/* 语音入口（主要动作）*/}
@@ -101,7 +98,7 @@ export function HomeClient() {
           type="button"
           onClick={submit}
           disabled={!text.trim()}
-          className="w-full min-h-[64px] mt-3 px-6 py-3 rounded-2xl bg-(--color-primary) hover:bg-(--color-primary-hover) active:scale-[0.99] transition text-white text-lg font-bold shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
+          className="w-full min-h-[64px] mt-3 px-6 py-3 rounded-2xl bg-(--color-primary) hover:bg-(--color-primary-hover) active:scale-[0.99] transition text-(--color-foreground) text-lg font-bold shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <span aria-hidden="true">→</span> 帮我看看
         </button>

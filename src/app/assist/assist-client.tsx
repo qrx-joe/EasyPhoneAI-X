@@ -231,7 +231,7 @@ export function AssistClient({ initialText }: Props) {
         type="button"
         onClick={() => void runDecision(text)}
         disabled={!text.trim() || requestState.kind === 'loading' || Boolean(image && !consented)}
-        className="w-full min-h-[64px] px-6 py-3 rounded-xl bg-(--color-primary) text-white text-xl font-semibold disabled:opacity-40"
+        className="w-full min-h-[64px] px-6 py-3 rounded-xl bg-(--color-primary) text-(--color-foreground) text-xl font-semibold disabled:opacity-40"
       >
         {requestState.kind === 'loading' ? '正在判断，请稍等' : '给我安全的下一步'}
       </button>
@@ -262,7 +262,7 @@ function AssistDecisionPanel({
         </div>
         <SpeakButton text={speech} />
         <p className="px-4 py-3 rounded-lg bg-(--color-soft) text-base">做完后应该看到：{decision.successSignal}</p>
-        <button type="button" onClick={onRetry} className="w-full min-h-[64px] rounded-xl bg-(--color-primary) text-white text-xl font-semibold">继续描述下一步</button>
+        <button type="button" onClick={onRetry} className="w-full min-h-[64px] rounded-xl bg-(--color-primary) text-(--color-foreground) text-xl font-semibold">继续描述下一步</button>
         <button type="button" onClick={onHome} className="w-full min-h-[56px] rounded-xl border border-(--color-border) text-base">回首页</button>
       </main>
     )
@@ -298,7 +298,7 @@ function AssistDecisionPanel({
           {decision.handoff.suggestions.slice(0, 3).map((suggestion) => <li key={suggestion} className="text-lg">• {suggestion}</li>)}
         </ul>
         <pre className="px-4 py-3 rounded-lg border-2 border-(--color-border) whitespace-pre-wrap font-sans text-base select-text">{cardText}</pre>
-        <button type="button" onClick={() => void share()} className="w-full min-h-[64px] rounded-xl bg-(--color-primary) text-white text-xl font-semibold">发给家人</button>
+        <button type="button" onClick={() => void share()} className="w-full min-h-[64px] rounded-xl bg-(--color-primary) text-(--color-foreground) text-xl font-semibold">发给家人</button>
         {shareStatus && <p role="status" className="text-base text-center">{shareStatus}</p>}
         <button type="button" onClick={onHome} className="w-full min-h-[56px] rounded-xl border border-(--color-border) text-base">回首页</button>
       </main>
@@ -312,7 +312,7 @@ function AssistDecisionPanel({
           <h1 className="text-2xl font-bold mb-2">这个我还不能确定</h1>
           {decision.questions.map((question) => <p key={question} className="text-lg leading-relaxed">{question}</p>)}
         </div>
-        <button type="button" onClick={onRetry} className="w-full min-h-[64px] rounded-xl bg-(--color-primary) text-white text-xl font-semibold">补充描述或重选截图</button>
+        <button type="button" onClick={onRetry} className="w-full min-h-[64px] rounded-xl bg-(--color-primary) text-(--color-foreground) text-xl font-semibold">补充描述或重选截图</button>
         <button type="button" onClick={onHome} className="w-full min-h-[56px] rounded-xl border border-(--color-border) text-base">回首页</button>
       </main>
     )
@@ -324,7 +324,7 @@ function AssistDecisionPanel({
         <h1 className="text-2xl font-bold mb-2">暂时没有合适的安全步骤</h1>
         <p className="text-lg">请补充你所在的 App 和页面，或者找家人一起确认。</p>
       </div>
-      <button type="button" onClick={onRetry} className="w-full min-h-[64px] rounded-xl bg-(--color-primary) text-white text-xl font-semibold">补充描述</button>
+      <button type="button" onClick={onRetry} className="w-full min-h-[64px] rounded-xl bg-(--color-primary) text-(--color-foreground) text-xl font-semibold">补充描述</button>
       <button type="button" onClick={onHome} className="w-full min-h-[56px] rounded-xl border border-(--color-border) text-base">回首页</button>
     </main>
   )

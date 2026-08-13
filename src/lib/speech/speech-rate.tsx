@@ -138,7 +138,7 @@ export function SpeechRateControl({
               onClick={() => setTier(opt.tier)}
               className={
                 selected
-                  ? 'min-h-[56px] px-3 py-3 rounded-xl bg-(--color-primary) text-white text-xl font-semibold shadow-sm border-2 border-(--color-primary)'
+                  ? 'min-h-[56px] px-3 py-3 rounded-xl bg-(--color-primary) text-(--color-foreground) text-xl font-semibold shadow-sm border-2 border-(--color-primary)'
                   : 'min-h-[56px] px-3 py-3 rounded-xl bg-white hover:bg-(--color-soft) active:scale-[0.99] transition text-(--color-foreground) text-xl font-medium border-2 border-(--color-border)'
               }
             >
