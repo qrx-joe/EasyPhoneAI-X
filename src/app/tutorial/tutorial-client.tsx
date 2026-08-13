@@ -29,15 +29,22 @@ export function TutorialClient({ tutorial }: Props) {
   const speakText = `${step.title}。${step.instruction}`
 
   return (
-    <main className="flex-1 flex flex-col px-5 py-6 gap-4 max-w-md mx-auto w-full">
-      <header>
-        <p className="text-base text-(--color-muted) mb-1">第 {stepIdx + 1} 步 / 共 {tutorial.steps.length} 步</p>
-        <h1 className="text-2xl font-bold text-(--color-foreground)">{tutorial.title}</h1>
+    <main className="flex-1 flex flex-col px-5 py-5 gap-4 max-w-md mx-auto w-full">
+      <header className="flex items-center gap-3">
+        <span className="brand-icon" aria-hidden="true">走</span>
+        <div>
+          <h1 className="text-xl font-bold text-(--color-foreground)">现在只做这一步</h1>
+          <p className="text-sm text-(--color-muted)">{tutorial.title}</p>
+        </div>
+        <p className="ml-auto text-sm text-(--color-muted)">第 {stepIdx + 1} 步 / 共 {tutorial.steps.length} 步</p>
       </header>
 
       {/* 当前步骤 */}
-      <div className="px-5 py-4 rounded-xl bg-(--color-soft) border border-(--color-border)">
-        <h2 className="text-xl font-semibold text-(--color-foreground) mb-2">{step.title}</h2>
+      <div className="px-5 py-5 rounded-[20px] bg-(--color-primary-soft) border-2 border-(--color-primary)">
+        <span className="inline-grid size-[62px] place-items-center rounded-[18px] bg-white text-(--color-primary) text-2xl font-bold mb-3" aria-hidden="true">
+          {tutorial.app === 'system' ? '⚙' : tutorial.app === 'wechat' ? '微' : '点'}
+        </span>
+        <h2 className="text-2xl font-bold text-(--color-foreground) mb-2">{step.title}</h2>
         <p className="text-lg text-(--color-foreground) leading-relaxed">{step.instruction}</p>
 
         {showAlternative && step.alternative && (
@@ -52,9 +59,10 @@ export function TutorialClient({ tutorial }: Props) {
       <SpeakButton text={speakText} />
 
       {/* 成功信号 */}
-      <div className="px-4 py-3 rounded-lg bg-(--color-primary-soft) border border-(--color-primary)">
-        <p className="text-base text-(--color-primary)">
-          做完这一步，你会看到：{tutorial.title}
+      <div className="flex items-start gap-2 px-4 py-3 rounded-2xl bg-(--color-soft)">
+        <span className="text-(--color-safe) font-bold" aria-hidden="true">✓</span>
+        <p className="text-base">
+          <strong>做对后会看到：</strong>{stepIdx < tutorial.steps.length - 1 ? tutorial.steps[stepIdx + 1].title : tutorial.title}
         </p>
       </div>
 
@@ -64,7 +72,7 @@ export function TutorialClient({ tutorial }: Props) {
           <button
             type="button"
             onClick={() => router.push('/')}
-            className="w-full min-h-[64px] px-6 py-3 rounded-xl bg-(--color-primary) hover:bg-(--color-primary-hover) active:scale-[0.99] transition text-white text-xl font-semibold shadow-sm"
+            className="w-full min-h-[64px] px-6 py-3 rounded-2xl bg-(--color-primary) hover:bg-(--color-primary-hover) active:scale-[0.99] transition text-white text-xl font-bold shadow-sm"
           >
             全部做完了
           </button>
@@ -72,9 +80,9 @@ export function TutorialClient({ tutorial }: Props) {
           <button
             type="button"
             onClick={() => { setStepIdx(stepIdx + 1); setShowAlternative(false) }}
-            className="w-full min-h-[64px] px-6 py-3 rounded-xl bg-(--color-primary) hover:bg-(--color-primary-hover) active:scale-[0.99] transition text-white text-xl font-semibold shadow-sm"
+            className="w-full min-h-[64px] px-6 py-3 rounded-2xl bg-(--color-primary) hover:bg-(--color-primary-hover) active:scale-[0.99] transition text-white text-xl font-bold shadow-sm"
           >
-            好了，下一步
+            ✓ 好了，下一步
           </button>
         )}
 
@@ -82,18 +90,18 @@ export function TutorialClient({ tutorial }: Props) {
           <button
             type="button"
             onClick={() => setShowAlternative(true)}
-            className="w-full min-h-[56px] px-6 py-3 rounded-xl bg-white hover:bg-(--color-soft) transition text-(--color-foreground) text-lg font-medium border-2 border-(--color-border)"
+            className="w-full min-h-[64px] px-6 py-3 rounded-2xl bg-white hover:bg-(--color-soft) transition text-(--color-foreground) text-lg font-bold border-2 border-(--color-border)"
           >
-            没看到这个按钮
+            找 没看到这个按钮
           </button>
         )}
 
         <button
           type="button"
           onClick={() => router.push('/')}
-          className="w-full min-h-[56px] px-6 py-3 rounded-xl bg-white hover:bg-(--color-soft) transition text-(--color-foreground) text-base font-normal border border-(--color-border)"
+          className="w-full min-h-[56px] px-6 py-3 rounded-xl bg-transparent hover:bg-(--color-soft) transition text-(--color-muted) text-base font-semibold border-0"
         >
-          不搞了，回首页
+          首页 不搞了，回首页
         </button>
       </div>
     </main>

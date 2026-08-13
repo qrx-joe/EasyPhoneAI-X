@@ -51,19 +51,24 @@ export function RiskAlertClient({ handoff }: Props) {
   }
 
   return (
-    <main className="flex-1 flex flex-col px-5 py-6 gap-4 max-w-md mx-auto w-full">
+    <main className="flex-1 flex flex-col px-5 py-5 gap-4 max-w-md mx-auto w-full">
+      <header className="flex items-center gap-3">
+        <span className="brand-icon bg-(--color-danger) shadow-[0_6px_16px_rgba(198,40,40,.22)]" aria-hidden="true">盾</span>
+        <h1 className="text-xl font-bold">安全提醒</h1>
+      </header>
       {/* 停止警示 */}
       <div
-        className="px-5 py-4 rounded-xl bg-(--color-danger-soft) border-2 border-(--color-danger)"
+        className="px-5 py-5 rounded-[20px] bg-(--color-danger-soft) border-2 border-(--color-danger)"
         role="alert"
       >
-        <h1 className="text-2xl font-bold text-(--color-danger) mb-2">先停下来</h1>
+        <span className="inline-grid size-[62px] place-items-center rounded-[18px] bg-white text-(--color-danger) text-2xl font-bold mb-3" aria-hidden="true">停</span>
+        <h2 className="text-2xl font-bold text-(--color-danger) mb-2">先停下来</h2>
         <p className="text-lg text-(--color-foreground) leading-relaxed">{handoff.summary}</p>
       </div>
 
       {/* 安全动作（方案 §9.1：三条以内安全动作）*/}
-      <div className="px-4 py-3 rounded-lg bg-(--color-soft) border border-(--color-border)">
-        <p className="text-base text-(--color-muted) mb-2">现在该做的</p>
+      <div className="px-4 py-3 rounded-2xl bg-(--color-soft)">
+        <p className="text-base font-bold mb-2">现在该做的</p>
         <ul className="space-y-2">
           {handoff.suggestions.slice(0, 3).map((s, i) => (
             <li key={i} className="text-lg text-(--color-foreground) leading-relaxed">
@@ -74,7 +79,7 @@ export function RiskAlertClient({ handoff }: Props) {
       </div>
 
       {/* 求助卡（方案 §10.1：脱敏上下文）*/}
-      <div className="px-4 py-3 rounded-lg bg-white border-2 border-(--color-border)">
+      <div className="px-4 py-3 rounded-2xl bg-white border-2 border-(--color-border)">
         <p className="text-base text-(--color-muted) mb-2">发给家人求助（点下面按钮）</p>
         <pre className="text-base text-(--color-foreground) whitespace-pre-wrap font-sans leading-relaxed">{cardText}</pre>
       </div>
@@ -83,9 +88,10 @@ export function RiskAlertClient({ handoff }: Props) {
       <button
         type="button"
         onClick={handleShare}
-        className="w-full min-h-[64px] px-6 py-3 rounded-xl bg-(--color-primary) hover:bg-(--color-primary-hover) active:scale-[0.99] transition text-white text-xl font-semibold shadow-sm"
+        aria-label="发给家人"
+        className="w-full min-h-[64px] px-6 py-3 rounded-2xl bg-(--color-danger) hover:bg-(--color-danger-hover) active:scale-[0.99] transition text-white text-xl font-bold shadow-sm"
       >
-        发给家人
+        家人 发给家人求助
       </button>
 
       {shareStatus === 'shared' && (
@@ -103,7 +109,7 @@ export function RiskAlertClient({ handoff }: Props) {
       <button
         type="button"
         onClick={() => router.push('/')}
-        className="w-full min-h-[56px] px-6 py-3 rounded-xl bg-white hover:bg-(--color-soft) transition text-(--color-foreground) text-base font-normal border border-(--color-border)"
+        className="w-full min-h-[56px] px-6 py-3 rounded-xl bg-transparent hover:bg-(--color-soft) transition text-(--color-muted) text-base font-semibold border-0"
       >
         回首页
       </button>

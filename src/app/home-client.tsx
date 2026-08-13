@@ -15,13 +15,32 @@ import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { VoiceInputButton } from '@/components/voice-input-button'
+import wechatIcon from '../../docs/assets/official-app-icons/wechat.jpg'
+import whatsappIcon from '../../docs/assets/official-app-icons/whatsapp.jpg'
 
 const EXAMPLES = [
-  '微信没有声音了',
-  '手机字太小',
-  '对方让我转账',
-  '对方让我开屏幕共享',
-]
+  { label: '微信没有声音了', icon: 'wechat', risky: false },
+  { label: '手机字太小看不清', icon: 'settings', risky: false },
+  { label: '银行短信说账户被冻结', icon: 'message', risky: true },
+  { label: 'WhatsApp 让开屏幕共享', icon: 'whatsapp', risky: true },
+] as const
+
+function ExampleIcon({ icon, risky }: { icon: (typeof EXAMPLES)[number]['icon']; risky: boolean }) {
+  const image = icon === 'wechat' ? wechatIcon : icon === 'whatsapp' ? whatsappIcon : null
+  return (
+    <span className="relative shrink-0">
+      {image ? (
+        // 这里需要真实 App 图标帮助老人按桌面外观识别；文字仍承担完整语义。
+        <img className="app-tile object-cover" src={image.src} alt="" />
+      ) : (
+        <span className={icon === 'message' ? 'app-tile bg-[linear-gradient(180deg,#5bd669,#34c759)]' : 'app-tile'} aria-hidden="true">
+          {icon === 'message' ? '信' : '⚙'}
+        </span>
+      )}
+      {risky && <span className="risk-badge" aria-hidden="true">!</span>}
+    </span>
+  )
+}
 
 export function HomeClient() {
   const router = useRouter()
@@ -37,11 +56,22 @@ export function HomeClient() {
   }, [router])
 
   return (
-    <main className="flex-1 flex flex-col px-5 py-6 gap-5 max-w-md mx-auto w-full">
-      <header className="text-center pt-2">
-        <h1 className="text-3xl font-bold text-(--color-foreground) mb-1">爸妈别急</h1>
-        <p className="text-xl text-(--color-primary) font-semibold">安心下一步</p>
+    <main className="flex-1 flex flex-col px-5 py-5 gap-4 max-w-md mx-auto w-full">
+      <header className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-3">
+          <span className="brand-icon" aria-hidden="true">♥</span>
+          <span>
+            <h1 className="text-xl font-bold leading-tight">爸妈别急</h1>
+            <p className="text-sm text-(--color-muted)">安心下一步</p>
+          </span>
+        </div>
+        <span className="rounded-full border border-(--color-border) px-3 py-2 text-sm font-semibold text-(--color-muted)">安全陪伴</span>
       </header>
+
+      <div className="pt-1">
+        <h2 className="text-2xl font-bold leading-tight">遇到什么问题了？</h2>
+        <p className="mt-1 text-base text-(--color-muted)">点蓝色按钮，直接说给我听</p>
+      </div>
 
       {/* 语音入口（主要动作）*/}
       <section aria-label="语音提问">
@@ -49,51 +79,58 @@ export function HomeClient() {
       </section>
 
       {/* 文字输入（次要动作，语音不可用时的兜底）*/}
-      <section aria-label="打字提问">
-        <label htmlFor="text-input" className="block text-base text-(--color-muted) mb-2 px-1">
-          或者打字告诉我
+      <div className="flex items-center gap-3 text-sm text-(--color-muted)" aria-hidden="true">
+        <span className="h-px flex-1 bg-(--color-border)" />
+        <span>不方便说话，也可以打字</span>
+        <span className="h-px flex-1 bg-(--color-border)" />
+      </div>
+
+      <section aria-label="打字提问" className="rounded-[18px] border-2 border-(--color-border) p-3">
+        <label htmlFor="text-input" className="flex items-center gap-2 text-base font-bold mb-1">
+          <span className="text-(--color-primary)" aria-hidden="true">⌨</span>用文字告诉我
         </label>
         <textarea
           id="text-input"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="遇到什么问题了？写在这里"
+          placeholder="例如：微信没有声音了"
           rows={3}
-          className="w-full min-h-[80px] px-4 py-3 rounded-xl border-2 border-(--color-border) bg-white text-(--color-foreground) text-lg resize-none focus:outline-none focus:border-(--color-primary)"
+          className="w-full min-h-[72px] px-1 py-2 border-0 bg-white text-(--color-foreground) text-base resize-none focus:outline-none"
         />
         <button
           type="button"
           onClick={submit}
           disabled={!text.trim()}
-          className="w-full min-h-[64px] mt-2 px-6 py-3 rounded-xl bg-(--color-primary) hover:bg-(--color-primary-hover) active:scale-[0.99] transition text-white text-xl font-semibold shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
+          className="w-full min-h-[64px] mt-3 px-6 py-3 rounded-2xl bg-(--color-primary) hover:bg-(--color-primary-hover) active:scale-[0.99] transition text-white text-lg font-bold shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          帮我看看
+          <span aria-hidden="true">→</span> 帮我看看
         </button>
       </section>
 
       {/* 常见示例 */}
       <section aria-label="常见问题">
-        <p className="text-base text-(--color-muted) mb-2 px-1">常见问题，点一下直接问</p>
+        <p className="text-sm font-semibold text-(--color-muted) mb-2 px-1">也可以点一个常见问题</p>
         <div className="grid grid-cols-1 gap-2">
           {EXAMPLES.map((ex) => (
             <button
-              key={ex}
+              key={ex.label}
               type="button"
-              onClick={() => router.push(`/assist?text=${encodeURIComponent(ex)}`)}
-              className="w-full min-h-[56px] px-4 py-3 rounded-xl bg-(--color-soft) hover:bg-(--color-soft-hover) active:scale-[0.99] transition text-(--color-foreground) text-lg text-left border border-(--color-border)"
+              onClick={() => router.push(`/assist?text=${encodeURIComponent(ex.label)}`)}
+              className="w-full min-h-[74px] px-3 py-2.5 rounded-2xl bg-white hover:bg-(--color-soft) active:scale-[0.99] transition text-(--color-foreground) text-base font-bold text-left border border-[#d8dee8] shadow-[0_3px_12px_rgba(24,34,48,.07)] flex items-center gap-3"
             >
-              {ex}
+              <ExampleIcon icon={ex.icon} risky={ex.risky} />
+              <span className="flex-1">{ex.label}</span>
+              <span className="text-2xl font-normal text-[#94a0b3]" aria-hidden="true">›</span>
             </button>
           ))}
         </div>
       </section>
 
       {/* 隐私提示 */}
-      <footer className="pt-2 pb-4">
-        <p className="text-sm text-(--color-muted) text-center leading-relaxed">
-          只帮你一步一步操作，遇到危险会停下来。
-          <br />
-          不会替你点按钮，不会替你付钱。
+      <footer className="pt-1 pb-3">
+        <p className="flex items-start justify-center gap-2 text-sm text-(--color-muted) leading-relaxed">
+          <span className="text-(--color-safe)" aria-hidden="true">✓</span>
+          <span>不会替你点按钮或付钱；发现危险会让你先停下来。</span>
         </p>
       </footer>
     </main>

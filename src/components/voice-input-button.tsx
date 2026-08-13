@@ -52,15 +52,21 @@ export function VoiceInputButton({ onFinal }: VoiceInputButtonProps) {
         onClick={isListening ? stop : start}
         className={
           isListening
-            ? 'w-full min-h-[112px] px-6 py-5 rounded-2xl bg-(--color-danger) text-white text-3xl font-bold flex flex-col items-center justify-center gap-2 shadow-md animate-pulse'
+            ? 'w-full min-h-[128px] px-6 py-5 rounded-[20px] bg-(--color-danger) text-white text-2xl font-bold flex flex-col items-center justify-center gap-2 shadow-[0_10px_22px_rgba(198,40,40,.24)] animate-pulse'
             : isUnavailable
-              ? 'w-full min-h-[112px] px-6 py-5 rounded-2xl bg-(--color-soft) hover:bg-(--color-soft-hover) active:scale-[0.98] transition text-(--color-foreground) text-3xl font-bold flex flex-col items-center justify-center gap-2 border-2 border-(--color-border)'
-              : 'w-full min-h-[112px] px-6 py-5 rounded-2xl bg-(--color-primary) hover:bg-(--color-primary-hover) active:scale-[0.98] transition text-white text-3xl font-bold flex flex-col items-center justify-center gap-2 shadow-sm'
+              ? 'w-full min-h-[128px] px-6 py-5 rounded-[20px] bg-(--color-soft) hover:bg-(--color-soft-hover) active:scale-[0.99] transition text-(--color-foreground) text-2xl font-bold flex flex-col items-center justify-center gap-2 border-2 border-(--color-border)'
+              : 'w-full min-h-[128px] px-6 py-5 rounded-[20px] bg-(--color-primary) hover:bg-(--color-primary-hover) active:scale-[0.99] transition text-white text-2xl font-bold flex flex-col items-center justify-center gap-2 shadow-[0_10px_22px_rgba(29,95,209,.25)]'
         }
         aria-label={isListening ? '我在听,再点一下停止' : buttonLabel}
         aria-pressed={isListening}
       >
-        <span>{buttonLabel}</span>
+        <span className="flex items-center justify-center gap-3">
+          <span className="ui-icon" aria-hidden="true">说</span>
+          <span>{buttonLabel}</span>
+        </span>
+        {!isListening && !errorMessage && (
+          <span className="text-sm font-medium opacity-90">点一下开始，再点一下停止</span>
+        )}
         {errorMessage && !isListening && (
           <span
             className={
