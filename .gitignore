@@ -42,3 +42,9 @@ tsconfig.tsbuildinfo
 
 # 本地工具目录
 .zcode/
+
+# 本地浏览器配置与文档渲染临时产物
+.lo-profile/
+.lo-profile-final/
+docx-render/
+docx-render-final/
