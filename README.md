@@ -35,7 +35,7 @@
 | 风险关键词分类（~80 条）+ MAX 合并 | 27 个测试（classify-risk + assess-observation-risk + risk-policy） |
 | 决策链保险丝（高风险必停 + 教程 maxLevel 硬校验 + medium 谨慎求助卡） | 47 个测试（decide-next + guide-next-step + tutorial） |
 | 求助卡构建 + 危险话术过滤 + 数字脱敏 | 32 个测试（handoff + card-serialization + question） |
-| 教练闭环（语音确认不提交 + 服务端步骤推进 + 每步成功信号） | 8 个单元测试（advance-step）+ 7 条 E2E |
+| 教练闭环（语音确认不提交 + 服务端步骤推进 + 每步成功信号） | 8 个单元测试（advance-step）+ 10 条 E2E（含键盘全流程、200% 缩放近似） |
 | 白名单教程匹配 + 防御过滤（含退款教程） | tutorial.test |
 | 决策契约（GuidanceDecision 四分支 + 错误码） | 41 个测试（risk-policy + error-codes + ui-observation + decision-client） |
 | 决策链编排（guide/stop/clarify/unsupported） | 22 个测试（decide-next.test，含 mock Vision） |
@@ -48,7 +48,7 @@
 - `pnpm typecheck`（TypeScript strict）通过
 - `pnpm build`（Next.js 生产构建）通过，4 个路由编译（`/`、`/assist`、`/api/v2/decision`、`/api/v2/step/advance`）
 - `pnpm dev` 开发服务器可启动
-- `pnpm test:e2e` 7 条移动端 Chrome 用例通过（低/中/高风险、教程全流程推进、语音确认不提交）
+- `pnpm test:e2e` 10 条移动端 Chrome 用例通过（低/中/高风险、教程全流程推进、语音确认不提交、键盘全流程、200% 缩放近似）
 
 ### ⚠️ 固定回放样例（非真实模型调用）
 
@@ -125,6 +125,7 @@ pnpm build      # 生产构建
 - [P0 构建方案](docs/安心下一步-P0-构建方案.md) —— 完整设计与实施计划
 - [ADR 0001：独立新项目](docs/adr/0001-new-project-isolated-from-legacy.md)
 - [ADR 0002：分层依赖方向](docs/adr/0002-layered-architecture-dependency-rules.md)
+- [ADR 0003：Android 只读观察原型边界](docs/adr/0003-android-prototype-boundaries.md)（提案，阶段 B 进入条件之一）
 
 ## 来源
 
