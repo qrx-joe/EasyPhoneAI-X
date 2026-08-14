@@ -16,9 +16,11 @@
 
 ## 子模块职责
 
-- `decide-next.ts` — 决策链编排：合并输入、风险、观察与教程匹配，产出最终决策
+- `decide-next.ts` — 决策链编排：合并输入、风险、观察与教程匹配，产出最终决策（guide 附带步骤会话）
 - `observe-screen.ts` — 截图观察用例（调用 VisionProvider port）
 - `guide-next-step.ts` — 下一步指导用例（含教程 maxLevel 硬校验，decide-next 复用）
+- `advance-step.ts` — 「我看到了」步骤推进用例（重跑风险检查，服务端权威索引）
+- `step-sessions.ts` — 步骤会话内存存储（opaque stateId；刷新/重启 → 安全回到重新描述）
 - `ports/` — Provider、Telemetry 等接口定义（依赖倒置的抽象端）
 
 ## 设计原则

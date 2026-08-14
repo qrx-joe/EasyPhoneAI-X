@@ -49,6 +49,7 @@ import { ERROR_CODES } from '../contracts/error-codes.ts'
 import type { VisionProvider, VisionFailure } from './ports/vision-provider.ts'
 import type { Telemetry } from './ports/telemetry.ts'
 import { observeScreen, type ObserveScreenResult } from './observe-screen.ts'
+import { createStepSession, toStepStateView } from './step-sessions.ts'
 
 /**
  * decide-next 用例的输入。
@@ -201,8 +202,20 @@ export async function decideNext(
   }
 
   // ── 8. 低/中风险 + 有可用教程（maxLevel 校验已过）→ guide ──
-  // P0 阶段：返回教程第一步。第五阶段接入完整状态机后按任务包步骤推进。
-  return finish(input, deps, startTime, guide.decision, merged.level, 'ok')
+  // 创建服务端步骤会话（阶段 A-2）：客户端只拿 opaque stateId，
+  // 「我看到了」的推进由 /api/v2/step/advance 在服务端重跑风险检查后执行。
+  const session = createStepSession({
+    text: trimmedText,
+    tutorialId: guide.tutorial.id,
+    stepIndex: 0,
+    riskFloor: merged.level,
+  })
+  const guideDecision: GuidanceDecision & { kind: 'guide' } = {
+    ...guide.decision,
+    stepState: toStepStateView(session, guide.tutorial.steps.length),
+  }
+
+  return finish(input, deps, startTime, guideDecision, merged.level, 'ok')
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -222,8 +235,9 @@ function extractVisionRisk(observe: ObserveScreenResult): RiskAssessment | null 
 /**
  * 视觉把风险升级到 rule 分类之上的等级时，rule 分类对象与最终等级不一致。
  * 重建一份与目标等级匹配的分类（求助卡依赖 question.risk）。
+ * advance-step 复用同一逻辑（推进时重跑风险检查的 blocked 分支）。
  */
-function classifyAtLevel(
+export function classifyAtLevel(
   base: RiskClassification,
   level: Exclude<RiskLevel, 'low'>,
 ): RiskClassification {

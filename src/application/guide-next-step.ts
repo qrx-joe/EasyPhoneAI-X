@@ -62,7 +62,8 @@ export function guideNextStep(
     kind: 'guide',
     risk: risk === 'medium' ? 'medium' : 'low',
     step: firstStep,
-    successSignal: tutorial.title,
+    // 每步成功信号来自教程数据（人工逐步审核的页面级变化），不是教程标题
+    successSignal: firstStep.successSignal,
   }
 
   return { kind: 'ok', decision, tutorial }

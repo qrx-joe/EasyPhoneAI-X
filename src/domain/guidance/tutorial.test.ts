@@ -28,6 +28,22 @@ describe('TUTORIALS 库', () => {
       for (const step of tut.steps) {
         assert.ok(step.title.length > 0, `${tut.id}/${step.id} 缺 title`)
         assert.ok(step.instruction.length > 0, `${tut.id}/${step.id} 缺 instruction`)
+        assert.ok(
+          step.successSignal.length > 0,
+          `${tut.id}/${step.id} 缺 successSignal（每步必须有可观察的页面级成功信号）`,
+        )
+      }
+    }
+  })
+
+  test('successSignal 是页面级变化，不是教程标题这类不可验证结果', () => {
+    for (const tut of TUTORIALS) {
+      for (const step of tut.steps) {
+        assert.notEqual(
+          step.successSignal,
+          tut.title,
+          `${tut.id}/${step.id} 的 successSignal 不应直接复用教程标题`,
+        )
       }
     }
   })

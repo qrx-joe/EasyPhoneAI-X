@@ -13,14 +13,14 @@ import { describe, test } from 'node:test'
 import { guideNextStep } from './guide-next-step.ts'
 
 describe('guideNextStep — ok 分支', () => {
-  test('low + 微信教程 → ok，risk=low，返回第一步 + 成功信号', () => {
+  test('low + 微信教程 → ok，risk=low，返回第一步 + 步骤级成功信号', () => {
     const result = guideNextStep('微信没有声音了', 'low')
     assert.equal(result.kind, 'ok')
     if (result.kind === 'ok') {
       assert.equal(result.decision.kind, 'guide')
       assert.equal(result.decision.risk, 'low')
       assert.equal(result.decision.step.id, 'wechat-no-sound-1')
-      assert.equal(result.decision.successSignal, '让微信声音回来')
+      assert.equal(result.decision.successSignal, result.decision.step.successSignal)
       assert.equal(result.tutorial.id, 'wechat-no-sound')
     }
   })

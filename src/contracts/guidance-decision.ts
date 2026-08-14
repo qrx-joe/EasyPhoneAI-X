@@ -17,6 +17,7 @@
 import type { RiskLevel } from '../domain/risk/types.ts'
 import type { TutorialStep } from '../domain/guidance/tutorial.ts'
 import type { HandoffCard } from '../domain/handoff/handoff-request.ts'
+import type { StepStateView } from './step-api.ts'
 
 /**
  * 一步指导的决策。
@@ -30,8 +31,14 @@ export interface GuideDecision {
   readonly risk: 'low' | 'medium'
   /** 当前要执行的步骤（来自白名单教程库）。 */
   readonly step: TutorialStep
-  /** 成功信号：告诉老人做完这一步会看到什么。 */
+  /** 成功信号：做完这一步用户能看到/听到的页面变化（步骤级，人工审核）。 */
   readonly successSignal: string
+  /**
+   * 步骤会话视图（无障碍教练方案 阶段 A-2）。
+   * 由 decideNext 创建；客户端凭 stateId 调 /api/v2/step/advance 推进，
+   * 索引只存服务端。缺省（如旧客户端）时 UI 不提供「我看到了」推进。
+   */
+  readonly stepState?: StepStateView
 }
 
 /**

@@ -1,5 +1,6 @@
 import type { DecisionResponse } from '../../contracts/decision-api.ts'
 import type { ErrorResponse } from '../../contracts/error-codes.ts'
+import type { StepAdvanceResponse, StepStateView } from '../../contracts/step-api.ts'
 
 export interface SubmitDecisionInput {
   readonly text: string
@@ -86,6 +87,7 @@ export function parseDecisionResponse(raw: unknown): DecisionResponse | null {
     case 'guide':
       if ((decision.risk !== 'low' && decision.risk !== 'medium') || !isTutorialStep(decision.step)) return null
       if (typeof decision.successSignal !== 'string') return null
+      if (decision.stepState !== undefined && !isStepStateView(decision.stepState)) return null
       break
     case 'stop':
       if ((decision.risk !== 'medium' && decision.risk !== 'high' && decision.risk !== 'critical') || !isHandoffCard(decision.handoff)) return null
@@ -101,6 +103,80 @@ export function parseDecisionResponse(raw: unknown): DecisionResponse | null {
   }
 
   return raw as unknown as DecisionResponse
+}
+
+/**
+ * 「我看到了」—— 请求服务端推进到下一步。
+ * 只提交 stateId；步骤索引、教程进度一律以服务端会话为准。
+ */
+export async function advanceStepRequest(
+  stateId: string,
+  fetcher: typeof fetch = fetch,
+): Promise<StepAdvanceResponse> {
+  let response: Response
+  try {
+    response = await fetcher('/api/v2/step/advance', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ stateId }),
+    })
+  } catch {
+    throw new DecisionClientError('网络连接失败，请稍后重试')
+  }
+
+  const body: unknown = await response.json().catch(() => null)
+  if (!response.ok) {
+    const parsedError = parseErrorResponse(body)
+    throw new DecisionClientError(
+      parsedError?.error.message ?? '系统暂时没有回应，请稍后重试',
+      parsedError?.error.code ?? 'INTERNAL_ERROR',
+      parsedError?.traceId ?? null,
+    )
+  }
+
+  const parsed = parseStepAdvanceResponse(body)
+  if (parsed === null) {
+    throw new DecisionClientError('系统返回了无法识别的结果，请重试', 'INVALID_RESPONSE')
+  }
+  return parsed
+}
+
+function parseStepAdvanceResponse(raw: unknown): StepAdvanceResponse | null {
+  if (!isRecord(raw) || typeof raw.traceId !== 'string' || typeof raw.policyVersion !== 'string') return null
+  if (!isRecord(raw.result) || typeof raw.result.kind !== 'string') return null
+
+  const result = raw.result
+  switch (result.kind) {
+    case 'guide':
+      if (!isRecord(result.decision) || result.decision.kind !== 'guide') return null
+      if (!isRecord(result.decision.step) || !isTutorialStep(result.decision.step)) return null
+      if (!isStepStateViewOrMissing(result.stepState)) return null
+      break
+    case 'complete':
+      if (typeof result.tutorialTitle !== 'string') return null
+      break
+    case 'blocked':
+      if (!isRecord(result.decision) || typeof result.decision.kind !== 'string') return null
+      break
+    case 'session_lost':
+      break
+    default:
+      return null
+  }
+
+  return raw as unknown as StepAdvanceResponse
+}
+
+function isStepStateViewOrMissing(value: unknown): boolean {
+  return value === undefined || isStepStateView(value)
+}
+
+function isStepStateView(value: unknown): value is StepStateView {
+  if (!isRecord(value)) return false
+  return typeof value.stateId === 'string'
+    && typeof value.tutorialId === 'string'
+    && typeof value.stepIndex === 'number'
+    && typeof value.totalSteps === 'number'
 }
 
 function parseErrorResponse(raw: unknown): ErrorResponse | null {

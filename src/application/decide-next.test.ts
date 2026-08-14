@@ -58,7 +58,7 @@ function makeInput(overrides: Partial<DecideNextInput> = {}): DecideNextInput {
 // ─────────────────────────────────────────────────────────────────────
 
 describe('decideNext — guide 分支（低风险 + 有教程）', () => {
-  test('微信没声音 → guide，返回教程第一步', async () => {
+  test('微信没声音 → guide，返回教程第一步 + 步骤会话', async () => {
     const { telemetry } = makeTelemetryCapture()
     const result = await decideNext(
       makeInput({ text: '微信没有声音了' }),
@@ -68,7 +68,12 @@ describe('decideNext — guide 分支（低风险 + 有教程）', () => {
     if (result.decision.kind === 'guide') {
       assert.equal(result.decision.risk, 'low')
       assert.ok(result.decision.step.title.length > 0)
-      assert.ok(result.decision.successSignal.length > 0)
+      assert.equal(result.decision.successSignal, result.decision.step.successSignal)
+      // 阶段 A-2：guide 附带服务端步骤会话视图（客户端只拿 opaque stateId）
+      assert.ok(result.decision.stepState, 'guide 决策应带 stepState')
+      assert.equal(result.decision.stepState!.stepIndex, 0)
+      assert.equal(result.decision.stepState!.totalSteps, 5)
+      assert.ok(result.decision.stepState!.stateId.length > 0)
     }
   })
 

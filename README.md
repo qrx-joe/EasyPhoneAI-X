@@ -33,21 +33,22 @@
 | 能力 | 证据 |
 |---|---|
 | 风险关键词分类（~80 条）+ MAX 合并 | 27 个测试（classify-risk + assess-observation-risk + risk-policy） |
-| 决策链保险丝（高风险必停 + 教程 maxLevel 硬校验 + medium 谨慎求助卡） | 46 个测试（decide-next + guide-next-step + tutorial） |
+| 决策链保险丝（高风险必停 + 教程 maxLevel 硬校验 + medium 谨慎求助卡） | 47 个测试（decide-next + guide-next-step + tutorial） |
 | 求助卡构建 + 危险话术过滤 + 数字脱敏 | 32 个测试（handoff + card-serialization + question） |
+| 教练闭环（语音确认不提交 + 服务端步骤推进 + 每步成功信号） | 8 个单元测试（advance-step）+ 7 条 E2E |
 | 白名单教程匹配 + 防御过滤（含退款教程） | tutorial.test |
-| 决策契约（GuidanceDecision 四分支 + 错误码） | 44 个测试（risk-policy + error-codes + ui-observation + decision-client） |
+| 决策契约（GuidanceDecision 四分支 + 错误码） | 41 个测试（risk-policy + error-codes + ui-observation + decision-client） |
 | 决策链编排（guide/stop/clarify/unsupported） | 22 个测试（decide-next.test，含 mock Vision） |
 | Qwen Vision 解析逻辑 | 17 个测试（adapter-internals，mock，非真实调用） |
 | WCAG 对比度 + 设计令牌契约 | 14 个测试（contrast.test，含代码扫描） |
-| **合计** | **187 个测试，186 pass / 1 skip / 0 fail** |
+| **合计** | **196 个测试，195 pass / 1 skip / 0 fail** |
 
 ### ✅ 本地构建验证
 
 - `pnpm typecheck`（TypeScript strict）通过
-- `pnpm build`（Next.js 生产构建）通过，3 个路由编译（`/`、`/assist`、`/api/v2/decision`）
+- `pnpm build`（Next.js 生产构建）通过，4 个路由编译（`/`、`/assist`、`/api/v2/decision`、`/api/v2/step/advance`）
 - `pnpm dev` 开发服务器可启动
-- `pnpm test:e2e` 三条移动端 Chrome 主路径通过（低风险、中风险退款、高风险停止）
+- `pnpm test:e2e` 7 条移动端 Chrome 用例通过（低/中/高风险、教程全流程推进、语音确认不提交）
 
 ### ⚠️ 固定回放样例（非真实模型调用）
 
@@ -62,7 +63,8 @@
 - **线上部署**：未部署到任何生产环境
 - **真实用户验证**：未做老年用户可用性测试
 - **截图同意/预览/手动遮挡 UI**：已实现浏览器本地 canvas 涂抹、撤销、取消和明确同意；客户端门禁有单测，仍缺真实设备操作验收
-- **完整任务包状态机**：已增加人工审核的退款教程与 Vision 风险升级，步骤推进仍使用 tutorial，完整 Allowed Action 状态机留待后续
+- **教程步骤状态机**：服务端会话已实现（opaque stateId + 推进时重跑风险检查，内存存储重启即回退）；`ReviewedTaskStep` 版本化任务包与 Allowed Action 状态机留待后续
+- **无障碍人工验收**：aria-busy / 焦点管理 / live region 已接入，TalkBack、键盘全流程、200% 缩放和真实设备记录未做（见 `docs/无障碍手机教练执行方案.md` 阶段 A）
 - **家属端**：方案 §2.3 明确不做账号/数据库/家属收件箱
 - **自动操作**：方案 §2.3 明确不做（无障碍 Service、远程控制、自动点击）
 

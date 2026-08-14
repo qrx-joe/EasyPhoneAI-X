@@ -10,8 +10,9 @@
  *   - 隐私提示用 role="status"
  *
  * 路由：文字、语音和示例统一进入 /assist，由正式决策 API 重新计算风险。
+ * 语音识别只填入文本，用户点「对，就是这个」确认后才跳转（阶段 A-1）。
  */
-import { useState, useCallback } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { VoiceInputButton } from '@/components/voice-input-button'
@@ -45,15 +46,25 @@ function ExampleIcon({ icon, risky }: { icon: (typeof EXAMPLES)[number]['icon'];
 export function HomeClient() {
   const router = useRouter()
   const [text, setText] = useState('')
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const submit = useCallback(() => {
     if (!text.trim()) return
     router.push(`/assist?text=${encodeURIComponent(text.trim())}`)
   }, [router, text])
 
+  // 语音识别结果只填入文本框，确认后才跳转（阶段 A-1：未确认不提交）
   const onVoiceFinal = useCallback((transcript: string) => {
+    setText(transcript)
+  }, [])
+
+  const onVoiceConfirm = useCallback((transcript: string) => {
     router.push(`/assist?text=${encodeURIComponent(transcript)}`)
   }, [router])
+
+  const onVoiceEdit = useCallback(() => {
+    textareaRef.current?.focus()
+  }, [])
 
   return (
     <main className="flex-1 flex flex-col px-5 py-5 gap-4 max-w-md mx-auto w-full">
@@ -70,9 +81,13 @@ export function HomeClient() {
         <p className="mt-1 text-base text-(--color-muted)">点下面的大按钮，直接说给我听</p>
       </div>
 
-      {/* 语音入口（主要动作）*/}
+      {/* 语音入口（主要动作）。识别后确认，未确认不跳转 */}
       <section aria-label="语音提问">
-        <VoiceInputButton onFinal={onVoiceFinal} />
+        <VoiceInputButton
+          onFinal={onVoiceFinal}
+          onConfirm={onVoiceConfirm}
+          onEdit={onVoiceEdit}
+        />
       </section>
 
       {/* 文字输入（次要动作，语音不可用时的兜底）*/}
@@ -88,6 +103,7 @@ export function HomeClient() {
         </label>
         <textarea
           id="text-input"
+          ref={textareaRef}
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="例如：微信没有声音了"
