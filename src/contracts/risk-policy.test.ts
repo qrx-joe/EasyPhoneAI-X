@@ -22,54 +22,52 @@ import {
 
 describe('mergeRiskByMax — 安全不变量（不可降级）', () => {
   test('规则 high + 视觉 low → high（视觉不能降级规则风险）', () => {
-    const rule: RiskAssessment = { level: 'high', source: 'rule' }
-    const vision: RiskAssessment = { level: 'low', source: 'vision' }
+    const rule: RiskAssessment = { level: 'high' }
+    const vision: RiskAssessment = { level: 'low' }
     const merged = mergeRiskByMax(rule, vision)
     assert.equal(merged.level, 'high')
-    assert.equal(merged.source, 'merged')
   })
 
   test('规则 critical + 视觉 low → critical（最高风险不可降级）', () => {
-    const rule: RiskAssessment = { level: 'critical', source: 'rule' }
-    const vision: RiskAssessment = { level: 'low', source: 'vision' }
+    const rule: RiskAssessment = { level: 'critical' }
+    const vision: RiskAssessment = { level: 'low' }
     assert.equal(mergeRiskByMax(rule, vision).level, 'critical')
   })
 
   test('规则 low + 视觉 high → high（视觉能升级风险）', () => {
-    const rule: RiskAssessment = { level: 'low', source: 'rule' }
-    const vision: RiskAssessment = { level: 'high', source: 'vision' }
+    const rule: RiskAssessment = { level: 'low' }
+    const vision: RiskAssessment = { level: 'high' }
     assert.equal(mergeRiskByMax(rule, vision).level, 'high')
   })
 
   test('规则 low + 视觉 critical → critical', () => {
-    const rule: RiskAssessment = { level: 'low', source: 'rule' }
-    const vision: RiskAssessment = { level: 'critical', source: 'vision' }
+    const rule: RiskAssessment = { level: 'low' }
+    const vision: RiskAssessment = { level: 'critical' }
     assert.equal(mergeRiskByMax(rule, vision).level, 'critical')
   })
 
   test('规则 medium + 视觉 medium → medium（维持）', () => {
-    const rule: RiskAssessment = { level: 'medium', source: 'rule' }
-    const vision: RiskAssessment = { level: 'medium', source: 'vision' }
+    const rule: RiskAssessment = { level: 'medium' }
+    const vision: RiskAssessment = { level: 'medium' }
     assert.equal(mergeRiskByMax(rule, vision).level, 'medium')
   })
 
   test('规则 high + 视觉 critical → critical（取最高）', () => {
-    const rule: RiskAssessment = { level: 'high', source: 'rule' }
-    const vision: RiskAssessment = { level: 'critical', source: 'vision' }
+    const rule: RiskAssessment = { level: 'high' }
+    const vision: RiskAssessment = { level: 'critical' }
     assert.equal(mergeRiskByMax(rule, vision).level, 'critical')
   })
 })
 
 describe('mergeRiskByMax — 无视觉输入', () => {
   test('vision 为 null → 以规则结果为准', () => {
-    const rule: RiskAssessment = { level: 'high', source: 'rule' }
+    const rule: RiskAssessment = { level: 'high' }
     const merged = mergeRiskByMax(rule, null)
     assert.equal(merged.level, 'high')
-    assert.equal(merged.source, 'rule')
   })
 
   test('vision 为 null + 规则 low → low', () => {
-    const rule: RiskAssessment = { level: 'low', source: 'rule' }
+    const rule: RiskAssessment = { level: 'low' }
     assert.equal(mergeRiskByMax(rule, null).level, 'low')
   })
 })

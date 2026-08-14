@@ -24,23 +24,11 @@ import { RISK_RANK } from '../domain/risk/types.ts'
 export const RISK_POLICY_VERSION = '2026.08-v1'
 
 /**
- * 风险来源标签。标识某个风险等级是从哪条路径得出的。
- *
- * 用于审计事件（方案 §11.1）和 fallback 状态记录。
- * 不得包含原始文本或截图内容。
- */
-export type RiskSource =
-  | 'rule'          // 确定性关键词规则
-  | 'vision'        // 截图观察（Qwen Vision）
-  | 'merged'        // 规则与视觉取 MAX 后
-  | 'unknown'       // 无法判定（技术故障或安全不确定性）
-
-/**
- * 带来源的风险等级。决策链内部传递的中间态。
+ * 带等级标签的风险评估。决策链内部传递的中间态
+ * （规则结果 / 视觉结果，以及两者取 MAX 后的结果）。
  */
 export interface RiskAssessment {
   readonly level: RiskLevel
-  readonly source: RiskSource
 }
 
 /**
@@ -53,7 +41,6 @@ export interface RiskAssessment {
  *
  * 特殊语义：
  *   - 任一来源为 high/critical → 结果 >= high（高风险不可被降级）
- *   - 两个来源都为 unknown/无法判定 → 返回 unknown 风险等级
  *
  * @param rule  确定性规则的风险评估
  * @param vision 截图观察的风险评估（可选，无截图时为 null）
@@ -67,9 +54,9 @@ export function mergeRiskByMax(
     return rule
   }
 
-  // 两者都有：取 MAX。source 标记为 merged。
+  // 两者都有：取 MAX。
   const ruleRank = RISK_RANK[rule.level]
   const visionRank = RISK_RANK[vision.level]
   const maxLevel = ruleRank >= visionRank ? rule.level : vision.level
-  return { level: maxLevel, source: 'merged' }
+  return { level: maxLevel }
 }

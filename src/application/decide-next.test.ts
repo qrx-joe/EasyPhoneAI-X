@@ -248,6 +248,52 @@ describe('decideNext — clarify 分支（视觉失败不 fail-open）', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────
+// medium 档（maxLevel 硬校验 + 谨慎求助卡）
+// ─────────────────────────────────────────────────────────────────────
+
+describe('decideNext — medium 档（教程 maxLevel 硬校验）', () => {
+  test('审计复现：「微信没声音 对方问我手机号」→ 不给 low 教程，转 medium 求助卡', async () => {
+    // 手机号命中 medium，微信没声音命中 maxLevel=low 的教程。
+    // 修复前：返回 guide + 「打开微信」步骤，隐私风险被无关教程吞掉。
+    const result = await decideNext(
+      makeInput({ text: '微信没声音 对方问我手机号' }),
+      { vision: null, telemetry: null, modelVersion: null },
+    )
+    assert.notEqual(result.decision.kind, 'guide', 'medium 输入绝不能拿到 maxLevel=low 的教程')
+    assert.equal(result.decision.kind, 'stop')
+    if (result.decision.kind === 'stop') {
+      assert.equal(result.decision.risk, 'medium')
+      assert.equal(result.decision.handoff.riskLevel, 'medium')
+      assert.equal(result.decision.handoff.suggestions.length, 3, '应给出 medium 谨慎建议（SUGGESTIONS_BY_LEVEL.medium）')
+    }
+  })
+
+  test('medium 不命中任何教程（「对方问我手机号」）→ stop + medium 求助卡，不再是 unsupported', async () => {
+    const result = await decideNext(
+      makeInput({ text: '对方问我手机号' }),
+      { vision: null, telemetry: null, modelVersion: null },
+    )
+    assert.equal(result.decision.kind, 'stop')
+    if (result.decision.kind === 'stop') {
+      assert.equal(result.decision.risk, 'medium')
+      assert.ok(result.decision.handoff.suggestions.length >= 3)
+    }
+  })
+
+  test('medium 命中 maxLevel=medium 的退款教程 → 正常 guide（risk=medium）', async () => {
+    const result = await decideNext(
+      makeInput({ text: '淘宝退款' }),
+      { vision: null, telemetry: null, modelVersion: null },
+    )
+    assert.equal(result.decision.kind, 'guide')
+    if (result.decision.kind === 'guide') {
+      assert.equal(result.decision.risk, 'medium')
+      assert.equal(result.decision.step.id, 'ecommerce-refund-1')
+    }
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────
 // unsupported 分支
 // ─────────────────────────────────────────────────────────────────────
 

@@ -17,6 +17,7 @@ export type QuestionSource = 'voice' | 'text' | 'demo'
 
 export interface QuestionRecord {
   readonly id: string
+  /** 脱敏后的回显文本（连续 4+ 位数字已隐藏，方案 §10.1 数据最小化）。 */
   readonly text: string
   readonly source: QuestionSource
   readonly risk: RiskClassification
@@ -43,10 +44,25 @@ function genId(): string {
  * 抛错而不是返回 null —— 这是安全相关的数据结构，「建了一个残缺的 QuestionRecord」
  * 是比抛错更糟糕的失败模式。
  *
- * @param text   用户原始输入。空白会被 trim。
+ * 数据最小化（方案 §10.1）：text 在这里做数字脱敏 —— 连续 4 位及以上数字
+ * （含全角、以及空格/短横线分隔的分组，即手机号/验证码/卡号/证件号形态）
+ * 整体替换为「[数字已隐藏]」。老人可能把验证码、卡号原样敲进输入框，
+ * QuestionRecord 会随求助卡和 API 响应离开决策链，不得携带这些内容。
+ * 注意：风险分类和教程匹配都在工厂之前、用原始文本跑，脱敏不影响判断。
+ *
+ * @param text   用户原始输入。空白会被 trim，敏感数字会被隐藏。
  * @param source 输入来源。
  * @param risk   必填，调用方必须先跑 classifyRiskByRules。
  */
+
+/** 疑似验证码/手机号/卡号：4 位以上连续数字（含全角），或以空格、短横线分隔的多个 4+ 位分组。 */
+const SENSITIVE_NUMBER_PATTERN = /[0-9０-９]{4,}(?:[ \-–—][0-9０-９]{4,})*/g
+
+/** 数字脱敏：整体替换，不保留任何数字片段。 */
+function maskSensitiveNumbers(text: string): string {
+  return text.replace(SENSITIVE_NUMBER_PATTERN, '[数字已隐藏]')
+}
+
 export function createQuestion(
   text: string,
   source: QuestionSource,
@@ -58,7 +74,7 @@ export function createQuestion(
   }
   return Object.freeze({
     id: genId(),
-    text: trimmed,
+    text: maskSensitiveNumbers(trimmed),
     source,
     risk,
     createdAt: new Date().toISOString(),

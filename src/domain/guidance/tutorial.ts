@@ -9,7 +9,8 @@
  * 4. 首个匹配的教程生效 —— 教程库按特异性排序，更具体的放前面。
  */
 
-import { shouldStopGuidance, type RiskLevel } from '../risk/types.ts'
+import { RISK_RANK, shouldStopGuidance, type RiskLevel } from '../risk/types.ts'
+import { normalizeInput } from '../text/normalize.ts'
 
 // ─────────────────────────────────────────────────────────────────────
 // 类型
@@ -52,7 +53,8 @@ export interface Tutorial {
   readonly matchKeywords: readonly string[]
   /**
    * 该教程能服务的最高风险等级。
-   * 风险等级 >= 教程 maxLevel 时，即使匹配上也不展示教程（必须走风险页）。
+   * 输入的风险等级高于 maxLevel 时，即使匹配上也不展示该教程
+   * （必须走风险确认/求助路径，见 tutorialAllowsRisk）。
    */
   readonly maxLevel: RiskLevel
   readonly steps: readonly TutorialStep[]
@@ -69,7 +71,7 @@ export interface Tutorial {
  * 教程特异性排序：keywords 数量越多越具体，排前面；同数量按数组顺序。
  */
 export function findTutorial(text: string): Tutorial | null {
-  const normalized = text.toLowerCase().trim()
+  const normalized = normalizeInput(text)
   if (!normalized) return null
 
   // 按关键词数量倒序 —— 关键词多的更具体
@@ -86,15 +88,28 @@ export function findTutorial(text: string): Tutorial | null {
 }
 
 /**
- * 给定风险等级，过滤出可以展示的教程。
- * 高/极高风险不进分步指导（防御性过滤，避免 UI 误调）。
+ * maxLevel 硬校验：教程能否服务该风险等级的输入。
  *
- * 复用 shouldStopGuidance()，避免重复硬编码 high/critical 判断 ——
- * 未来阈值变化（如 medium 也要停）时自动跟随。
+ * 两条规则（安全核心，不可绕过）：
+ * 1. high/critical 输入一律不进教程（shouldStopGuidance）；
+ *    教程自身声明 maxLevel 为 high/critical 属于库配置错误，同样一律不给。
+ * 2. 输入风险等级高于教程 maxLevel 时不给教程 ——
+ *    「微信没声音 + 对方问手机号」（medium）不能被 maxLevel=low 的教程吞掉。
+ */
+export function tutorialAllowsRisk(tutorial: Tutorial, level: RiskLevel): boolean {
+  if (shouldStopGuidance(level)) return false
+  if (shouldStopGuidance(tutorial.maxLevel)) return false
+  return RISK_RANK[level] <= RISK_RANK[tutorial.maxLevel]
+}
+
+/**
+ * 给定风险等级，过滤出可以展示的教程（防御性过滤，避免 UI 误调）。
+ *
+ * 在 shouldStopGuidance 之外，同时执行 maxLevel 校验：
+ * medium 输入只能拿到 maxLevel >= medium 的教程。
  */
 export function safeTutorialsFor(level: RiskLevel): readonly Tutorial[] {
-  if (shouldStopGuidance(level)) return []
-  return TUTORIALS.filter((t) => !shouldStopGuidance(t.maxLevel))
+  return TUTORIALS.filter((t) => tutorialAllowsRisk(t, level))
 }
 
 // ─────────────────────────────────────────────────────────────────────

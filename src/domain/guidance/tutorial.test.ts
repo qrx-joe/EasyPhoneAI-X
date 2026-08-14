@@ -10,7 +10,7 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 
-import { TUTORIALS, findTutorial, safeTutorialsFor } from './tutorial.ts'
+import { TUTORIALS, findTutorial, safeTutorialsFor, tutorialAllowsRisk } from './tutorial.ts'
 
 describe('TUTORIALS 库', () => {
   test('至少有 3 个教程（含中风险退款）', () => {
@@ -104,6 +104,12 @@ describe('findTutorial', () => {
     assert.equal(tut!.id, 'wechat-no-sound')
   })
 
+  test('全角输入归一化后仍匹配（ＷＥＣＨＡＴ 等价 wechat）', () => {
+    const tut = findTutorial('ＷＥＣＨＡＴ 没声音')
+    assert.ok(tut, '全角输入应命中教程')
+    assert.equal(tut!.id, 'wechat-no-sound')
+  })
+
   test('首尾空白不影响', () => {
     const tut = findTutorial('   微信没有声音了   ')
     assert.ok(tut)
@@ -121,10 +127,19 @@ describe('findTutorial', () => {
   })
 })
 
-describe('safeTutorialsFor(level)', () => {
-  test('low/medium：返回所有非高风险教程', () => {
+describe('safeTutorialsFor(level) / tutorialAllowsRisk —— maxLevel 硬校验', () => {
+  test('low：返回全部 maxLevel >= low 的教程', () => {
     const low = safeTutorialsFor('low')
-    assert.ok(low.length >= 2)
+    assert.equal(low.length, TUTORIALS.length)
+  })
+
+  test('medium：只返回 maxLevel >= medium 的教程（low 教程不给）', () => {
+    const medium = safeTutorialsFor('medium')
+    assert.deepEqual(
+      medium.map((t) => t.id),
+      ['ecommerce-refund'],
+      `medium 只应有退款教程，实际 ${JSON.stringify(medium.map((t) => t.id))}`,
+    )
   })
 
   test('high：返回空数组（高风险不该进分步指导）', () => {
@@ -133,5 +148,20 @@ describe('safeTutorialsFor(level)', () => {
 
   test('critical：返回空数组', () => {
     assert.equal(safeTutorialsFor('critical').length, 0)
+  })
+
+  test('tutorialAllowsRisk：medium 输入 + low 教程 → false（审计复现的硬校验）', () => {
+    const wechat = TUTORIALS.find((t) => t.id === 'wechat-no-sound')!
+    assert.equal(tutorialAllowsRisk(wechat, 'low'), true)
+    assert.equal(tutorialAllowsRisk(wechat, 'medium'), false, 'medium 不能拿 maxLevel=low 的教程')
+    assert.equal(tutorialAllowsRisk(wechat, 'high'), false)
+    assert.equal(tutorialAllowsRisk(wechat, 'critical'), false)
+  })
+
+  test('tutorialAllowsRisk：medium 输入 + medium 教程 → true', () => {
+    const refund = TUTORIALS.find((t) => t.id === 'ecommerce-refund')!
+    assert.equal(tutorialAllowsRisk(refund, 'low'), true)
+    assert.equal(tutorialAllowsRisk(refund, 'medium'), true)
+    assert.equal(tutorialAllowsRisk(refund, 'high'), false)
   })
 })

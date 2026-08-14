@@ -17,7 +17,7 @@ import type { QuestionRecord } from '../question/question.ts'
 
 export interface HandoffCard {
   readonly id: string
-  /** 关联的原始问题。卡片需要回显老人说了什么，让家人能确认场景。 */
+  /** 关联的问题快照（text 已脱敏，方案 §10.1）。用于回显老人说了什么，让家人能确认场景。 */
   readonly question: QuestionRecord
   readonly riskLevel: RiskLevel
   /** 一句话总结，给家人一眼看懂发生了什么事。 */

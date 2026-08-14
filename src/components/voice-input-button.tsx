@@ -10,8 +10,8 @@
  *   - 浏览器不支持 / 出错：显示中文错误提示，父组件用文本兜底继续可用
  *
  * 分层约束（方案 §4.2）：
- *   组件本身不直接调用 domain 路由，只通过 onFinal 回调把识别结果交给上层。
- *   路由决策由页面（app 层）负责，调用 domain/routing 的 routeToInput。
+ *   组件本身不直接调用 domain 决策，只通过 onFinal 回调把识别结果交给上层。
+ *   路由由页面（app 层）负责：统一带文本进入 /assist，由服务端决策 API 判风险。
  *   这样 components 不依赖 domain，保持依赖方向单向。
  *
  * 适老化：
@@ -25,7 +25,7 @@ import { useSpeechRecognition } from '@/lib/speech/use-speech-recognition.ts'
 interface VoiceInputButtonProps {
   /**
    * 收到 final transcript 时的回调。
-   * 调用方（页面）在这里调用 routeToInput(router, text) 完成路由跳转。
+   * 调用方（页面）在这里带着文本进入 /assist 决策流。
    */
   onFinal: (transcript: string) => void
 }

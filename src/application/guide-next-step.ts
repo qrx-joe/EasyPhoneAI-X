@@ -4,17 +4,19 @@
  * 职责：给定用户输入 + 当前风险等级，返回一个已审核的下一步指导。
  *
  * 安全不变量：
- *   - 只有 low/medium 风险才能产出 guide（high/critical 抛错）
+ *   - 只有 low/medium 风险才能产出 guide（high/critical 返回 stopped）
+ *   - 教程 maxLevel 硬校验：风险等级高于教程 maxLevel 时按 no_match 处理
  *   - 一个指导步骤只能包含一个已审核动作（方案 §6.2）
  *   - 返回的 step 必须来自白名单教程库（findTutorial），不自由编造
  *
- * 这个用例被 decide-next 内联调用，也暴露为独立函数供测试和其他调用方使用。
+ * decide-next 的 guide 分支直接复用本函数；也暴露为独立函数供测试使用。
  */
 
 import type { RiskLevel } from '../domain/risk/types.ts'
 import { shouldStopGuidance } from '../domain/risk/types.ts'
 import {
   findTutorial,
+  tutorialAllowsRisk,
   type Tutorial,
   type TutorialStep,
 } from '../domain/guidance/tutorial.ts'
@@ -48,7 +50,9 @@ export function guideNextStep(
   }
 
   const tutorial = findTutorial(text)
-  if (tutorial === null) {
+  // maxLevel 硬校验：风险等级高于教程 maxLevel 时按「无可用教程」处理，
+  // 绝不给高于 maxLevel 的教程（如 medium 输入命中 low 教程）。
+  if (tutorial === null || !tutorialAllowsRisk(tutorial, risk)) {
     return { kind: 'no_match' }
   }
 

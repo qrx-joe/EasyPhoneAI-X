@@ -1,12 +1,23 @@
 /**
  * 稳定错误码契约 —— 方案 §8.2。
  *
+ * 错误码有两个出现位置，语义二选一、不混用：
+ *   1. ErrorResponse.error.code —— 传输/参数层错误：请求无法解析成决策输入
+ *      （缺字段、multipart 格式错、图片超限/格式不支持），返回 HTTP 4xx/5xx。
+ *   2. UnsupportedDecision.reasonCode —— 决策级「不支持」：请求可解析、决策正常
+ *      产出，但结果是「不支持」（空白文本、有截图缺 consentId、无匹配教程），
+ *      返回 HTTP 200 + decision.kind = 'unsupported'，由 UI 温和渲染。
+ * 同一个码出现在哪个位置由触发层决定：路由层解析失败 → 1；决策链内部判定 → 2。
+ *
  * 错误响应不得包含堆栈、密钥、内部路径或模型原始输出。
  * 这些错误码是面向调用方的稳定协议，改名需走版本兼容。
  */
 
 /**
- * 九个稳定错误码（方案 §8.2）。
+ * 七个稳定错误码（方案 §8.2）。
+ * 注：VISION_TIMEOUT / RATE_LIMITED 曾在方案里预留，但视觉超时实际走
+ * clarify 决策（fail-closed）、限流未实现，为避免「看似有保障、实际未接线」
+ * 已删除；真正接线时再走版本兼容加回。
  */
 export const ERROR_CODES = {
   /** 请求参数非法（缺字段、格式错） */
@@ -17,14 +28,10 @@ export const ERROR_CODES = {
   IMAGE_TOO_LARGE: 'IMAGE_TOO_LARGE',
   /** 截图格式不支持 */
   UNSUPPORTED_IMAGE: 'UNSUPPORTED_IMAGE',
-  /** 视觉请求超时（方案 §7.2 硬超时 5 秒） */
-  VISION_TIMEOUT: 'VISION_TIMEOUT',
   /** 模型输出无法通过 Schema 校验（方案 §7.2） */
   INVALID_MODEL_OUTPUT: 'INVALID_MODEL_OUTPUT',
   /** 任务包状态机匹配失败（方案 §8.2） */
   TASK_STATE_NOT_FOUND: 'TASK_STATE_NOT_FOUND',
-  /** 触发限流（方案 §11.2 故障分类） */
-  RATE_LIMITED: 'RATE_LIMITED',
   /** 未分类内部错误（兜底，不泄露细节） */
   INTERNAL_ERROR: 'INTERNAL_ERROR',
 } as const

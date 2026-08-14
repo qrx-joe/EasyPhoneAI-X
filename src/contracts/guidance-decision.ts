@@ -6,7 +6,7 @@
  *
  * 四个分支：
  *   - guide:      低/中风险，给出一个已审核的下一步
- *   - stop:       高/极高风险，强中止并附求助卡
+ *   - stop:       高/极高风险强中止；medium 在无可用已审核教程时谨慎求助（均附求助卡）
  *   - clarify:    风险未知，向用户提问以澄清
  *   - unsupported: 不支持的场景（如无法识别的 App）
  *
@@ -38,12 +38,14 @@ export interface GuideDecision {
  * 风险停止决策。
  *
  * 方案 §2.2：高风险强中止。
- * 方案 §12.3 验收：高风险页面不存在"继续操作"或模拟成功按钮。
+ * medium 档：没有能服务该风险等级的已审核教程时，同样停下并附谨慎求助卡
+ * （README §2.2「二次确认」的产出形态；绝不降级给 low 教程）。
+ * 方案 §12.3 验收：风险页面不存在"继续操作"或模拟成功按钮。
  */
 export interface StopDecision {
   readonly kind: 'stop'
-  /** high 或 critical。 */
-  readonly risk: 'high' | 'critical'
+  /** medium（谨慎求助）/ high / critical（强中止）。low 永远不会停。 */
+  readonly risk: 'medium' | 'high' | 'critical'
   /** 附带的求助卡（脱敏，供用户确认后分享）。 */
   readonly handoff: HandoffCard
 }

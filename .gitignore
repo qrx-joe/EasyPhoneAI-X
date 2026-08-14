@@ -56,3 +56,5 @@ docs/demo-video/segments/
 docs/demo-video/tmp/
 docs/demo-video/server.log
 docs/demo-video/cards/*.png
+
+.vercel

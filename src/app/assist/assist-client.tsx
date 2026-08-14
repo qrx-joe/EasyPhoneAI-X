@@ -270,6 +270,8 @@ function AssistDecisionPanel({
 
   if (decision.kind === 'stop') {
     const cardText = serializeHandoffCard(decision.handoff)
+    // medium 是「谨慎求助」（无可用已审核教程），话术比 high/critical 的强中止缓和。
+    const heading = decision.risk === 'medium' ? '先确认一下' : '先停下来'
     async function share() {
       setShareStatus('')
       try {
@@ -291,7 +293,7 @@ function AssistDecisionPanel({
     return (
       <main className="flex-1 flex flex-col px-5 py-6 gap-4 max-w-md mx-auto w-full">
         <div role="alert" className="px-5 py-4 rounded-xl bg-(--color-danger-soft) border-2 border-(--color-danger)">
-          <h1 className="text-2xl font-bold text-(--color-danger) mb-2">先停下来</h1>
+          <h1 className="text-2xl font-bold text-(--color-danger) mb-2">{heading}</h1>
           <p className="text-lg leading-relaxed">{decision.handoff.summary}</p>
         </div>
         <ul className="px-5 py-4 rounded-xl bg-(--color-soft) space-y-2">

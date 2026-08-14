@@ -88,7 +88,7 @@ export function parseDecisionResponse(raw: unknown): DecisionResponse | null {
       if (typeof decision.successSignal !== 'string') return null
       break
     case 'stop':
-      if ((decision.risk !== 'high' && decision.risk !== 'critical') || !isHandoffCard(decision.handoff)) return null
+      if ((decision.risk !== 'medium' && decision.risk !== 'high' && decision.risk !== 'critical') || !isHandoffCard(decision.handoff)) return null
       break
     case 'clarify':
       if (decision.risk !== 'unknown' || !isStringArray(decision.questions)) return null

@@ -19,6 +19,8 @@
 - `risk/` — 风险等级（low/medium/high/critical）、关键词规则、MAX 不变量、`shouldStopGuidance`
 - `guidance/` — 任务状态机、允许动作（Allowed Action）、一步指导步骤
 - `handoff/` — 求助卡构建、危险话术过滤、纯文本序列化
+- `question/` — 问题快照（含数字脱敏，方案 §10.1 数据最小化）
+- `text/` — 输入归一化（全角→半角 + 小写），风险分类与教程匹配共用
 
 ## 设计原则
 

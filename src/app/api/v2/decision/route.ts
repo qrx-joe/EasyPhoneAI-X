@@ -13,6 +13,12 @@ import { randomUUID } from 'node:crypto'
  * P0 单次 multipart/form-data 请求，一个请求内携带文本 + 可选截图。
  * 服务端必须重新计算风险；客户端传入的风险等级一律不可信。
  *
+ * 错误响应语义（与 error-codes.ts 契约一致）：
+ *   - 本路由只产 ErrorResponse（HTTP 4xx/5xx），用于「请求无法解析成决策输入」的
+ *     传输/参数层错误（缺字段、multipart 格式错、图片超限/格式不支持）。
+ *   - 决策级「不支持」（空白文本、缺 consentId、无匹配教程）由 decideNext 以
+ *     HTTP 200 + decision.kind='unsupported' + reasonCode 返回，UI 温和渲染。
+ *
  * 错误响应不含堆栈、密钥、模型原始输出（方案 §8.2）。
  */
 
@@ -106,10 +112,6 @@ function statusForCode(code: string): number {
     case ERROR_CODES.IMAGE_TOO_LARGE:
     case ERROR_CODES.UNSUPPORTED_IMAGE:
       return 400
-    case ERROR_CODES.RATE_LIMITED:
-      return 429
-    case ERROR_CODES.VISION_TIMEOUT:
-      return 504
     default:
       return 500
   }

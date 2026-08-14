@@ -6,13 +6,19 @@
  *     -> 确定性风险规则
  *     -> 截图观察（可选）
  *     -> 风险结果取 MAX
- *     -> 任务包状态匹配
- *     -> Allowed Action 检查
+ *     -> high/critical 强中止（求助卡）
+ *     -> 视觉失败 -> clarify（不 fail-open）
+ *     -> 教程匹配 + maxLevel 硬校验（guideNextStep）
+ *     -> medium 无可用教程 -> 谨慎求助卡；low 无教程 -> unsupported
  *     -> GuidanceDecision
  *
  * 安全不变量（方案 §6.2）：
  *   - 规则命中 high/critical 后，普通指导立即终止。
  *   - AI 只能维持或升级规则风险，不能降级（mergeRiskByMax 保证）。
+ *   - 教程 maxLevel 硬校验：风险等级高于教程 maxLevel 时绝不给教程
+ *     （medium 输入不能被 low 教程吞掉，README §2.2 medium 档）。
+ *   - medium 没有能服务该风险等级的已审核教程时，产出 medium 谨慎求助卡
+ *     （SUGGESTIONS_BY_LEVEL.medium），不给教程、也不静默降级。
  *   - 截图缺失、模糊、模型冲突、Schema 无效或任务状态不匹配时返回 unknown。
  *   - unknown 不得进入 guide。
  *   - 模型自由文本不得直接驱动页面跳转、自动操作或外部消息发送。
@@ -22,9 +28,10 @@
 
 import { classifyRiskByRules } from '../domain/risk/classify-risk.ts'
 import { assessObservationRisk } from '../domain/risk/assess-observation-risk.ts'
-import { findTutorial, safeTutorialsFor } from '../domain/guidance/tutorial.ts'
+import type { RiskClassification, RiskLevel } from '../domain/risk/types.ts'
 import { createQuestion } from '../domain/question/question.ts'
 import { buildHandoffCard } from '../domain/handoff/handoff-templates.ts'
+import { guideNextStep } from './guide-next-step.ts'
 
 import {
   mergeRiskByMax,
@@ -33,7 +40,6 @@ import {
 } from '../contracts/risk-policy.ts'
 import type {
   GuidanceDecision,
-  GuideDecision,
   StopDecision,
   ClarifyDecision,
   UnsupportedDecision,
@@ -110,7 +116,6 @@ export async function decideNext(
   const ruleClassification = classifyRiskByRules(trimmedText)
   const ruleAssessment: RiskAssessment = {
     level: ruleClassification.level,
-    source: 'rule',
   }
 
   // ── 3. 截图观察（可选）──
@@ -133,15 +138,7 @@ export async function decideNext(
   // merged.level 收窄为 'high' | 'critical'（StopDecision.risk 的类型要求）。
   // shouldStopGuidance 的逻辑与此等价，由测试和 safeTutorialsFor 间接覆盖。
   if (merged.level === 'high' || merged.level === 'critical') {
-    const finalClassification = ruleClassification.level === merged.level
-      ? ruleClassification
-      : {
-          level: merged.level,
-          matchedKeywords: [],
-          reason: merged.level === 'critical'
-            ? '截图中出现了验证码、转账或远程操作等极高风险信息，请立即停止。'
-            : '截图中出现了需要家人或官方渠道核实的高风险信息。',
-        }
+    const finalClassification = classifyAtLevel(ruleClassification, merged.level)
     const question = createQuestion(trimmedText, 'text', finalClassification)
     const handoff = buildHandoffCard(question)
     const stopDecision: StopDecision = {
@@ -164,18 +161,13 @@ export async function decideNext(
     return finish(input, deps, startTime, clarify, 'unknown', `vision_${observeResult.reason}`)
   }
 
-  // ── 7. 任务包状态匹配（P0 用 tutorial 匹配替代完整状态机）──
-  const tutorial = findTutorial(trimmedText)
-  if (tutorial === null) {
-    // 没有匹配的白名单教程 → unsupported
-    return finish(input, deps, startTime, {
-      kind: 'unsupported',
-      reasonCode: ERROR_CODES.TASK_STATE_NOT_FOUND,
-    }, merged.level, 'no_tutorial')
-  }
+  // ── 7. 教程匹配 + maxLevel 硬校验（guideNextStep 内执行）──
+  // medium 命中 low 教程（如「微信没声音 + 对方问手机号」）会被硬校验拦下，
+  // 绝不给高于教程 maxLevel 的指导。
+  const guide = guideNextStep(trimmedText, merged.level)
 
-  // 防御性过滤：即使前面过了，这里再卡一次（safeTutorialsFor 用 shouldStopGuidance）
-  if (safeTutorialsFor(merged.level).length === 0) {
+  if (guide.kind === 'stopped') {
+    // 防御：high/critical 已在前面分流，这里理论不可达；再卡一次，不 fail-open。
     return finish(input, deps, startTime, {
       kind: 'clarify',
       risk: 'unknown',
@@ -183,17 +175,34 @@ export async function decideNext(
     }, 'unknown', 'safe_filter')
   }
 
-  // ── 8. 低/中风险 + 有匹配教程 → guide ──
-  // P0 阶段：返回教程第一步。第五阶段接入完整状态机后按任务包步骤推进。
-  const firstStep = tutorial.steps[0]
-  const guideDecision: GuideDecision = {
-    kind: 'guide',
-    risk: merged.level === 'medium' ? 'medium' : 'low',
-    step: firstStep,
-    successSignal: tutorial.title,
+  if (guide.kind === 'no_match') {
+    // medium 档产出：没有能服务该风险等级的已审核教程时，
+    // 给谨慎求助卡（README §2.2「二次确认」；SUGGESTIONS_BY_LEVEL.medium）。
+    if (merged.level === 'medium') {
+      const question = createQuestion(
+        trimmedText,
+        'text',
+        classifyAtLevel(ruleClassification, 'medium'),
+      )
+      const handoff = buildHandoffCard(question)
+      const stopDecision: StopDecision = {
+        kind: 'stop',
+        risk: 'medium',
+        handoff,
+      }
+      return finish(input, deps, startTime, stopDecision, 'medium', 'medium_handoff')
+    }
+
+    // low：没有匹配的白名单教程 → unsupported
+    return finish(input, deps, startTime, {
+      kind: 'unsupported',
+      reasonCode: ERROR_CODES.TASK_STATE_NOT_FOUND,
+    }, merged.level, 'no_tutorial')
   }
 
-  return finish(input, deps, startTime, guideDecision, merged.level, 'ok')
+  // ── 8. 低/中风险 + 有可用教程（maxLevel 校验已过）→ guide ──
+  // P0 阶段：返回教程第一步。第五阶段接入完整状态机后按任务包步骤推进。
+  return finish(input, deps, startTime, guide.decision, merged.level, 'ok')
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -207,7 +216,24 @@ export async function decideNext(
 function extractVisionRisk(observe: ObserveScreenResult): RiskAssessment | null {
   if (observe.kind !== 'ok') return null
   const classification = assessObservationRisk(observe.observation)
-  return { level: classification.level, source: 'vision' }
+  return { level: classification.level }
+}
+
+/**
+ * 视觉把风险升级到 rule 分类之上的等级时，rule 分类对象与最终等级不一致。
+ * 重建一份与目标等级匹配的分类（求助卡依赖 question.risk）。
+ */
+function classifyAtLevel(
+  base: RiskClassification,
+  level: Exclude<RiskLevel, 'low'>,
+): RiskClassification {
+  if (base.level === level) return base
+  const reasons: Record<Exclude<RiskLevel, 'low'>, string> = {
+    medium: '截图中出现了需要先核实的个人信息或操作，建议先跟家人确认。',
+    high: '截图中出现了需要家人或官方渠道核实的高风险信息。',
+    critical: '截图中出现了验证码、转账或远程操作等极高风险信息，请立即停止。',
+  }
+  return { level, matchedKeywords: [], reason: reasons[level] }
 }
 
 /**

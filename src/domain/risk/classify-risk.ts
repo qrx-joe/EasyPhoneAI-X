@@ -16,29 +16,7 @@ import {
   type RiskClassification,
   type RiskLevel,
 } from './types.ts'
-
-/**
- * 全角字符 → 半角。覆盖 ASCII 可打印区(! ~)和全角空格。
- *
- * 老人在手机输入法下经常出全角：全角数字「６」、全角字母「Ａ」、全角标点。
- */
-function fullToHalf(text: string): string {
-  return text
-    .replace(/[！-～]/g, (ch) =>
-      String.fromCharCode(ch.charCodeAt(0) - 0xfee0),
-    )
-    .replace(/　/g, ' ')
-}
-
-/**
- * 输入文本归一化：
- * - 转半角（让 Apple/ＡＰＰＬＥ/ａｐｐｌｅ 走到同一形态）
- * - 转小写（英文关键词统一以小写存）
- * - trim
- */
-function normalize(text: string): string {
-  return fullToHalf(text).toLowerCase().trim()
-}
+import { normalizeInput } from '../text/normalize.ts'
 
 /**
  * 按规则给一段文本分类风险。
@@ -55,7 +33,7 @@ function normalize(text: string): string {
  * @param text 用户输入的原始文本（或语音转写后的文本）。
  */
 export function classifyRiskByRules(text: string): RiskClassification {
-  const normalized = normalize(text)
+  const normalized = normalizeInput(text)
 
   if (!normalized) {
     return { level: 'low', matchedKeywords: [], reason: '' }

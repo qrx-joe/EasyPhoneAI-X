@@ -133,4 +133,26 @@ describe('buildHandoffCard（模板）', () => {
       }
     }
   })
+
+  test('数据最小化：用户把验证码/卡号敲进输入框，question.text 也不得携带（方案 §10.1）', () => {
+    // 审计缺口：此前的安全约束测试只查 summary + suggestions，
+    // 漏掉了 card.question.text（随 API 响应 JSON 离开决策链的原始输入快照）。
+    const riskInputs = [
+      '短信验证码是 123456 对吗',
+      '对方让我转账 卡号 6222 0210 1234 5678',
+      '他们要我的手机号 13812345678',
+    ]
+    for (const input of riskInputs) {
+      const q = makeQuestion(input)
+      const card = buildHandoffCard(q)
+      const text = card.question.text
+      assert.ok(
+        !/[0-9]{4}/.test(text),
+        `「${input}」的 question.text 残留 4 位以上数字: ${text}`,
+      )
+      assert.ok(!text.includes('123456'), `question.text 不应含验证码原文: ${text}`)
+      assert.ok(!text.includes('6222'), `question.text 不应含卡号片段: ${text}`)
+      assert.ok(!text.includes('13812345678'), `question.text 不应含手机号: ${text}`)
+    }
+  })
 })

@@ -18,10 +18,11 @@
 | 路径 | 场景 | 系统行为 |
 |---|---|---|
 | 低风险 | 微信没声音 / 字太小 | 一步指导，每步一个可逆动作 + 成功信号 |
-| 中风险 | 电商退款 | 只允许已审核步骤；出现付款/验证码/陌生渠道立即升级 |
+| 中风险 | 电商退款 | 只允许已审核步骤（教程 maxLevel 硬校验）；无可用教程时给谨慎求助卡 |
 | 高风险 | 转账 / 验证码 / 屏幕共享 | 直接停止，生成脱敏求助卡 |
 
-三条路径使用同一套生产路由，不使用隐藏分支伪造成功。
+三条路径共用同一条生产决策链（`/assist` → `/api/v2/decision` → `decideNext`），
+不使用隐藏分支伪造成功。
 
 ## 证据等级与已知边界（诚实声明）
 
@@ -31,20 +32,20 @@
 
 | 能力 | 证据 |
 |---|---|
-| 风险关键词分类（~80 条）+ MAX 合并 | 33 个 domain 测试（classify-risk.test） |
-| 路由保险丝（高风险绝不进教程） | 12 个测试（user-routing.test + deep-link-guard.test） |
-| 求助卡构建 + 危险话术过滤 | 21 个测试（handoff.test + card-serialization.test） |
+| 风险关键词分类（~80 条）+ MAX 合并 | 27 个测试（classify-risk + assess-observation-risk + risk-policy） |
+| 决策链保险丝（高风险必停 + 教程 maxLevel 硬校验 + medium 谨慎求助卡） | 46 个测试（decide-next + guide-next-step + tutorial） |
+| 求助卡构建 + 危险话术过滤 + 数字脱敏 | 32 个测试（handoff + card-serialization + question） |
 | 白名单教程匹配 + 防御过滤（含退款教程） | tutorial.test |
-| 决策契约（GuidanceDecision 四分支） | 17 个测试（risk-policy + error-codes + ui-observation） |
-| 决策链编排（guide/stop/clarify/unsupported） | 20 个测试（decide-next.test，含 mock Vision） |
+| 决策契约（GuidanceDecision 四分支 + 错误码） | 44 个测试（risk-policy + error-codes + ui-observation + decision-client） |
+| 决策链编排（guide/stop/clarify/unsupported） | 22 个测试（decide-next.test，含 mock Vision） |
 | Qwen Vision 解析逻辑 | 17 个测试（adapter-internals，mock，非真实调用） |
 | WCAG 对比度 + 设计令牌契约 | 14 个测试（contrast.test，含代码扫描） |
-| **合计** | **195 个测试，194 pass / 1 skip / 0 fail** |
+| **合计** | **187 个测试，186 pass / 1 skip / 0 fail** |
 
 ### ✅ 本地构建验证
 
 - `pnpm typecheck`（TypeScript strict）通过
-- `pnpm build`（Next.js 生产构建）通过，8 个路由编译
+- `pnpm build`（Next.js 生产构建）通过，3 个路由编译（`/`、`/assist`、`/api/v2/decision`）
 - `pnpm dev` 开发服务器可启动
 - `pnpm test:e2e` 三条移动端 Chrome 主路径通过（低风险、中风险退款、高风险停止）
 
@@ -84,7 +85,7 @@ app/components  ──▶  application  ──▶  domain
  contracts
 ```
 
-- `domain/`：纯函数安全核心（risk/guidance/handoff/question/routing），无 React/fetch/env
+- `domain/`：纯函数安全核心（risk/guidance/handoff/question/text），无 React/fetch/env
 - `application/`：用例编排（decide-next/observe-screen），依赖 ports 接口
 - `contracts/`：跨边界协议（GuidanceDecision/UIObservation/错误码）
 - `infrastructure/`：Provider 实现（Qwen Vision/Telemetry），含 fetch/env
@@ -101,6 +102,8 @@ app/components  ──▶  application  ──▶  domain
 4. UNKNOWN 不得进入 guide
 5. 模型自由文本不直接驱动页面跳转或操作
 6. 一个指导步骤只含一个已审核动作 + 成功信号
+7. 教程 maxLevel 硬校验：风险等级高于教程 maxLevel 时绝不给教程；
+   medium 无可用教程时产出谨慎求助卡，不降级、不静默
 
 ## 本地运行
 

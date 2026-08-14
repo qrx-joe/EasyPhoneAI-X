@@ -59,3 +59,39 @@ describe('createQuestion', () => {
     })
   })
 })
+
+describe('createQuestion — 数字脱敏（方案 §10.1 数据最小化）', () => {
+  function textOf(input: string): string {
+    const risk = classifyRiskByRules(input)
+    return createQuestion(input, 'text', risk).text
+  }
+
+  test('6 位验证码被隐藏', () => {
+    const text = textOf('验证码是 123456')
+    assert.ok(!text.includes('123456'), `不应包含验证码原文: ${text}`)
+    assert.ok(text.includes('[数字已隐藏]'))
+  })
+
+  test('11 位手机号被隐藏', () => {
+    const text = textOf('对方要我报手机号 13812345678')
+    assert.ok(!text.includes('13812345678'), `不应包含手机号原文: ${text}`)
+  })
+
+  test('空格/短横线分隔的卡号形态被整体隐藏', () => {
+    for (const card of ['6222 0210 1234 5678', '6222-0210-1234-5678']) {
+      const text = textOf(`卡号 ${card} 泄露了`)
+      assert.ok(!/6222/.test(text), `不应保留卡号片段: ${text}`)
+      assert.ok(!/[0-9]{4}/.test(text), `不应残留 4 位以上数字: ${text}`)
+    }
+  })
+
+  test('全角数字同样被隐藏', () => {
+    const text = textOf('验证码是１２３４５６')
+    assert.ok(!/１２３４５６|123456/.test(text), `全角数字也应隐藏: ${text}`)
+  })
+
+  test('短数字（<= 3 位）不误伤', () => {
+    const text = textOf('把字调到 18 号大小')
+    assert.ok(text.includes('18'), `3 位以内数字应保留: ${text}`)
+  })
+})
